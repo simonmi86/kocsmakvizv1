@@ -345,7 +345,7 @@ startBtn.addEventListener("click", () => {
     stopTimer();
     current++;
     if (current < questions.length) showQuestion();
-    else endGame{endGame(player, score, questions.length);};
+    else {endGame(player, score, questions.length);};
   }
 
   function endGame() {
@@ -371,6 +371,7 @@ startBtn.addEventListener("click", () => {
       `Eredményed mentve az eredménytáblára.`;
   }
 });
+
 
 
 
