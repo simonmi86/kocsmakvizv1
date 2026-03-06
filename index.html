@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8" />
+<title>Kocsmakvíz – Online verzió</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="container">
+    <h2>Kocsmakvíz 🍻</h2>
+
+    <div id="nameScreen">
+        <p>Add meg a neved:</p>
+        <input id="playerName" placeholder="Név...">
+        <br><br>
+        <button id="startBtn">Játék indítása</button>
+    </div>
+
+    <div id="quizScreen" style="display:none;">
+        <h3 id="question"></h3>
+        <div id="answers"></div>
+    </div>
+
+    <div id="resultScreen" style="display:none;">
+        <h2 id="resultText"></h2>
+        <button onclick="location.reload()">Újra játszom</button>
+    </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
