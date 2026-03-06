@@ -110,16 +110,29 @@ async function endGame(playerName, finalScore, totalQuestions) {
 }
 
 async function showAdminScreen() {
+  // 🔧 FONTOS: kérdezzük le helyben, így biztosan létezik ebben a scope-ban
+  const tableBody = document.getElementById("leaderTableBody");
+
+  // UI váltás
   nameScreen.style.display   = "none";
   quizScreen.style.display   = "none";
   resultScreen.style.display = "none";
   adminScreen.style.display  = "block";
 
-  // átmeneti "Betöltés…" sor
-  tableBody.innerHTML = `<tr><td colspan="5" style="opacity:.8">Betöltés…</td></tr>`;
+  // Ha nincs is táblázat a DOM-ban, lépjünk ki biztonságosan
+  if (!tableBody) {
+    console.warn("[Admin] Nincs #leaderTableBody a DOM-ban.");
+    return;
+  }
 
+  // Ha most még a localStorage-os renderBoard-ot használod:
+  renderBoard();
+
+  // (Ha Firestore-ból akarsz tölteni, a fenti sort cseréld a következőre:)
+  /*
+  tableBody.innerHTML = `<tr><td colspan="5" style="opacity:.8">Betöltés…</td></tr>`;
   try {
-    const rows = await firestoreLoadLeaderboard(); // ← Firestore-ból
+    const rows = await firestoreLoadLeaderboard(); // Firestore-ból
     if (!rows.length) {
       tableBody.innerHTML = `<tr><td colspan="5" style="opacity:.8">Nincs még tárolt eredmény.</td></tr>`;
       return;
@@ -140,8 +153,8 @@ async function showAdminScreen() {
     console.error("[Admin] betöltési hiba:", e);
     tableBody.innerHTML = `<tr><td colspan="5" style="opacity:.8">Hiba történt a betöltés közben.</td></tr>`;
   }
+  */
 }
-
 document.addEventListener("DOMContentLoaded", () => {
   // ======= Kérdésbank (18 kérdés) =======
   const allQuestions = [
@@ -365,4 +378,5 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 });
+
 
