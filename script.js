@@ -52,18 +52,22 @@ async function firestoreCountAttempts(name) {
 }
 
 // ========== Firestore: eredmény mentése (COMPAT) ==========
+
 async function firestoreAddResult(name, score, total) {
+  console.log("[AddResult] start", { name, score, total });
   try {
     await db.collection("leaderboard").add({
-      name: name,                 // ha kisbetűsítést akarsz: name.toLowerCase()
+      name,
       score: Number(score) || 0,
       total: Number(total) || 0,
       playedAt: new Date()
     });
+    console.log("[AddResult] success");
   } catch (err) {
-    console.error("[AddResult] Firestore hiba:", err);
+    console.error("[AddResult] error", err);
   }
 }
+
 
 // ========== Firestore: leaderboard törlése (COMPAT) ==========
 async function firestoreClearLeaderboard() {
@@ -349,7 +353,7 @@ startBtn.addEventListener("click", () => {
     stopTimer();
     current++;
     if (current < questions.length) showQuestion();
-    else { endGame(); }
+    else  endGame(); 
   }
 
   function endGame() {
@@ -375,6 +379,7 @@ startBtn.addEventListener("click", () => {
       `Eredményed mentve az eredménytáblára.`;
   }
 });
+
 
 
 
