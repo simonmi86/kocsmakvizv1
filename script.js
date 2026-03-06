@@ -54,14 +54,11 @@ async function firestoreCountAttempts(name) {
   }
 }
 
-// ========== Firestore: eredmény mentése (COMPAT) ==========
-
-
 async function firestoreAddResult(name, score, total) {
   console.log("[AddResult] start", { name, score, total });
   try {
     await db.collection("leaderboard").add({
-      name,
+      name: name,                 // ha egységesíted: name.toLowerCase()
       score: Number(score) || 0,
       total: Number(total) || 0,
       playedAt: new Date()
@@ -87,13 +84,13 @@ async function firestoreClearLeaderboard() {
 }
 
 
+
 // --- Játék vége: mentés + UI frissítés ---
 async function endGame(playerName, finalScore, totalQuestions) {
-  // UI
   quizScreen.style.display = "none";
   resultScreen.style.display = "block";
 
-  // Helyi (eszköz) rekord frissítése – védetten
+  // Helyi (eszköz) rekord frissítés – védetten
   try {
     const high = Number(localStorage.getItem(HS_KEY) || 0);
     if (finalScore > high) localStorage.setItem(HS_KEY, String(finalScore));
@@ -104,8 +101,9 @@ async function endGame(playerName, finalScore, totalQuestions) {
     console.warn("[EndGame] High score frissítés kihagyva:", e);
   }
 
-  // Firestore mentés
+  // Firestore mentés (COMPAT)
   try {
+    console.log("[EndGame] mentés indul", { playerName, finalScore, totalQuestions });
     await firestoreAddResult(playerName, finalScore, totalQuestions);
     console.log("[EndGame] Mentve Firestore-ba");
   } catch (e) {
@@ -114,12 +112,12 @@ async function endGame(playerName, finalScore, totalQuestions) {
 
   // Eredmény kiírás
   if (typeof resultText !== "undefined" && resultText) {
-    resultText.innerHTML = `${playerName}, a pontszámod: <strong>${finalScore} / ${totalQuestions}</strong>`;
+    resultText.innerHTML =
+      `${playerName}, a pontszámod: <strong>${finalScore} / ${totalQuestions}</strong>`;
   }
 }
+window.endGame = endGame; // (opció, ha bárhonnan hívni szeretnéd)
 
-// (opció) ha máshonnan is el akarod érni:
-window.endGame = endGame;
 
 
 
@@ -373,13 +371,15 @@ startBtn.addEventListener("click", () => {
 function nextQuestion() {
   stopTimer();
   current++;
-  if (current < questions.length) {
-    showQuestion();
-  } else {
-    // I T T : paraméterek átadása
-    endGame(player, score, questions.length);
-  }
+  
+if (current < questions.length) {
+   showQuestion();
+ } else {
+   // ← Itt adunk át mindent expliciten
+   endGame(player, score, questions.length);
+ }
 }
+
 
 
 
@@ -410,6 +410,7 @@ function nextQuestion() {
       `Eredményed mentve az eredménytáblára.`;
   } */
 });
+
 
 
 
