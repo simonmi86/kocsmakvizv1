@@ -152,19 +152,33 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ======= Start gomb =======
-  startBtn.addEventListener("click", () => {
+startBtn.addEventListener("click", () => {
     const name = (playerName.value || "").trim();
-    if (!name) { alert("Kérlek add meg a neved!"); return; }
-
-    // Admin mód: kmadmin → eredménytábla
-    if (name === "kmadmin") {
-      showAdminScreen();
-      return;
+    if (!name) { 
+        alert("Kérlek add meg a neved!"); 
+        return; 
     }
 
-    // Kvíz indul (DUPLA NÉV NINCS TILTVA)
+    // ---- ADMIN mód ----
+    if (name === "kmadmin") {
+        showAdminScreen();
+        return;
+    }
+
+    // ---- 5 próbálkozás limit névre ----
+    const board = loadBoard();
+    const attempts = board.filter(e => e.name.toLowerCase() === name.toLowerCase()).length;
+
+    if (attempts >= 5) {
+        alert("Ezzel a névvel elérted az 5 próbálkozás limitet. "
+            + "Töröld az eredménytáblát az új próbálkozáshoz.");
+        return;
+    }
+
+    // ---- Kvíz indul ----
     player = name;
-    score = 0; current = 0;
+    score = 0;
+    current = 0;
     questions = pickRandom10();
 
     if (qTotal) qTotal.textContent = TOTAL;
@@ -179,7 +193,7 @@ document.addEventListener("DOMContentLoaded", () => {
     quizScreen.style.display   = "block";
 
     showQuestion();
-  });
+});
 
   // ======= Admin gombok =======
   clearBoardBtn?.addEventListener("click", () => {
@@ -259,3 +273,4 @@ document.addEventListener("DOMContentLoaded", () => {
       `Eredményed mentve az eredménytáblára.`;
   }
 });
+
