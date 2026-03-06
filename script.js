@@ -86,19 +86,19 @@ async function firestoreClearLeaderboard() {
   }
 }
 
- // --- Játék vége: mentés + UI frissítés ---
 
-async function endGame() {
+// --- Játék vége: mentés + UI frissítés ---
+async function endGame(playerName, finalScore, totalQuestions) {
+  // UI
   quizScreen.style.display = "none";
   resultScreen.style.display = "block";
 
-  // Helyi (eszköz) rekord frissítés – védetten
+  // Helyi (eszköz) rekord frissítése – védetten
   try {
-    const highRaw = localStorage.getItem(HS_KEY);
-    const high = Number(highRaw || 0);
-    if (score > high) localStorage.setItem(HS_KEY, String(score));
+    const high = Number(localStorage.getItem(HS_KEY) || 0);
+    if (finalScore > high) localStorage.setItem(HS_KEY, String(finalScore));
     if (typeof highView !== "undefined" && highView) {
-      highView.textContent = String(Math.max(score, high));
+      highView.textContent = String(Math.max(finalScore, high));
     }
   } catch (e) {
     console.warn("[EndGame] High score frissítés kihagyva:", e);
@@ -106,16 +106,19 @@ async function endGame() {
 
   // Firestore mentés
   try {
-    await firestoreAddResult(player, score, questions.length);
+    await firestoreAddResult(playerName, finalScore, totalQuestions);
     console.log("[EndGame] Mentve Firestore-ba");
   } catch (e) {
     console.error("[EndGame] Mentési hiba:", e);
   }
 
+  // Eredmény kiírás
   if (typeof resultText !== "undefined" && resultText) {
-    resultText.innerHTML = `${player}, a pontszámod: <strong>${score} / ${questions.length}</strong>`;
+    resultText.innerHTML = `${playerName}, a pontszámod: <strong>${finalScore} / ${totalQuestions}</strong>`;
   }
 }
+
+// (opció) ha máshonnan is el akarod érni:
 window.endGame = endGame;
 
 
@@ -366,12 +369,18 @@ startBtn.addEventListener("click", () => {
     startTimer();
   }
 
-  function nextQuestion() {
-    stopTimer();
-    current++;
-    if (current < questions.length) showQuestion();
-    else  endGame(); 
+  
+function nextQuestion() {
+  stopTimer();
+  current++;
+  if (current < questions.length) {
+    showQuestion();
+  } else {
+    // I T T : paraméterek átadása
+    endGame(player, score, questions.length);
   }
+}
+
 
 
  console.log("[NextQuestion] Vége – endGame() hívás következik");
@@ -401,6 +410,7 @@ startBtn.addEventListener("click", () => {
       `Eredményed mentve az eredménytáblára.`;
   } */
 });
+
 
 
 
