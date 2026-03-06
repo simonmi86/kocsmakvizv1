@@ -1,3 +1,86 @@
+
+
+// ========== Firestore: leaderboard lekérdezés (COMPAT) ==========
+async function firestoreLoadLeaderboard() {
+  try {
+    // 1) Lekérdezés összeállítása
+    //    Elsődleges rendezés: score DESC
+    //    (opcionális) másodlagos rendezés: playedAt DESC – ha szeretnéd, vedd fel második orderBy-ként
+    let queryRef = db.collection("leaderboard").orderBy("score", "desc");
+    // Ha szeretnél másodlagos rendezést is:
+    // queryRef = queryRef.orderBy("playedAt", "desc"); // ha van index hozzá
+
+    // 2) Lekérdezés futtatása
+    const snap = await queryRef.get();
+
+    // 3) Átalakítás JS tömbbé
+    const rows = [];
+    snap.forEach(doc => {
+      const d = doc.data() || {};
+      rows.push({
+        name:  d.name  ?? "",
+        score: Number(d.score) || 0,
+        total: Number(d.total) || 0,
+        playedAt: d.playedAt ?? null   // lehet Date vagy Firestore Timestamp – formázd megjelenítéskor
+      });
+    });
+
+    return rows;
+
+  } catch (err) {
+    console.error("[LoadLeaderboard] Firestore hiba:", err);
+    return [];
+  }
+}
+
+// ========== Firestore: próbálkozások számolása (COMPAT) ==========
+async function firestoreCountAttempts(name) {
+  if (!name || !name.trim()) return 0;
+  const normalized = name.trim(); // vagy .toLowerCase()
+
+  try {
+    const snap = await db
+      .collection("leaderboard")
+      .where("name", "==", normalized)
+      .get();
+
+    return snap.size;
+  } catch (err) {
+    console.error("[CountAttempts] Firestore hiba:", err);
+    return 0;
+  }
+}
+
+// ========== Firestore: eredmény mentése (COMPAT) ==========
+async function firestoreAddResult(name, score, total) {
+  try {
+    await db.collection("leaderboard").add({
+      name: name,                 // ha kisbetűsítést akarsz: name.toLowerCase()
+      score: Number(score) || 0,
+      total: Number(total) || 0,
+      playedAt: new Date()
+    });
+  } catch (err) {
+    console.error("[AddResult] Firestore hiba:", err);
+  }
+}
+
+// ========== Firestore: leaderboard törlése (COMPAT) ==========
+async function firestoreClearLeaderboard() {
+  try {
+    const snap = await db.collection("leaderboard").get();
+    const deletions = [];
+    snap.forEach(doc => deletions.push(doc.ref.delete()));
+    await Promise.all(deletions);
+  } catch (err) {
+    console.error("[ClearLeaderboard] Firestore hiba:", err);
+  }
+}
+
+  
+
+
+
 document.addEventListener("DOMContentLoaded", () => {
   // ======= Kérdésbank (18 kérdés) =======
   const allQuestions = [
@@ -273,4 +356,5 @@ startBtn.addEventListener("click", () => {
       `Eredményed mentve az eredménytáblára.`;
   }
 });
+
 
