@@ -1,4 +1,6 @@
-
+let player = "";
+let score = 0;
+let questions = [];
 // High score kulcs (helyi, eszközön tárolt rekordhoz)
 const HS_KEY = "kocsmakviz_highscore";
 
@@ -85,7 +87,8 @@ async function firestoreClearLeaderboard() {
 
 
 
-// --- Játék vége: mentés + UI frissítés ---
+
+/ --- Játék vége: mentés + UI frissítés ---
 async function endGame(playerName, finalScore, totalQuestions) {
   quizScreen.style.display = "none";
   resultScreen.style.display = "block";
@@ -116,7 +119,6 @@ async function endGame(playerName, finalScore, totalQuestions) {
       `${playerName}, a pontszámod: <strong>${finalScore} / ${totalQuestions}</strong>`;
   }
 }
-window.endGame = endGame; // (opció, ha bárhonnan hívni szeretnéd)
 
 
 
@@ -372,13 +374,15 @@ function nextQuestion() {
   stopTimer();
   current++;
   
-if (current < questions.length) {
+
+ if (current < questions.length) {
    showQuestion();
  } else {
-   // ← Itt adunk át mindent expliciten
-   endGame(player, score, questions.length);
+   console.log("[NextQuestion] Vége – endGame() hívás következik, args:", { player, score, total: questions.length });
+   endGame(player, score, questions.length);   // <-- PARAMÉTERREL HÍVJUK
  }
 }
+
 
 
 
@@ -410,6 +414,7 @@ if (current < questions.length) {
       `Eredményed mentve az eredménytáblára.`;
   } */
 });
+
 
 
 
