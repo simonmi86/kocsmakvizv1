@@ -1,4 +1,7 @@
 
+// High score kulcs (helyi, eszközön tárolt rekordhoz)
+const HS_KEY = "kocsmakviz_highscore";
+
 
 // ========== Firestore: leaderboard lekérdezés (COMPAT) ==========
 async function firestoreLoadLeaderboard() {
@@ -84,29 +87,37 @@ async function firestoreClearLeaderboard() {
 }
 
  // --- Játék vége: mentés + UI frissítés ---
-async function endGame() {
-  console.log("[EndGame] beléptem");
+
+sync function endGame() {
   quizScreen.style.display = "none";
   resultScreen.style.display = "block";
 
-  const high = Number(localStorage.getItem(HS_KEY) || 0);
-  if (score > high) localStorage.setItem(HS_KEY, String(score));
-  if (highView) highView.textContent = Math.max(score, high);
+  // Helyi (eszköz) rekord frissítés – védetten
+  try {
+    const highRaw = localStorage.getItem(HS_KEY);
+    const high = Number(highRaw || 0);
+    if (score > high) localStorage.setItem(HS_KEY, String(score));
+    if (typeof highView !== "undefined" && highView) {
+      highView.textContent = String(Math.max(score, high));
+    }
+  } catch (e) {
+    console.warn("[EndGame] High score frissítés kihagyva:", e);
+  }
 
- 
-try {
-  console.log("[EndGame] mentés indul", { player, score, total: questions.length });
-  await firestoreAddResult(player, score, questions.length);
-  console.log("[EndGame] mentés OK");
-} catch (e) {
-  console.error("[EndGame] mentés HIBA:", e);
-}
+  // Firestore mentés
+  try {
+    await firestoreAddResult(player, score, questions.length);
+    console.log("[EndGame] Mentve Firestore-ba");
+  } catch (e) {
+    console.error("[EndGame] Mentési hiba:", e);
+  }
 
-
-  if (resultText) {
+  if (typeof resultText !== "undefined" && resultText) {
     resultText.innerHTML = `${player}, a pontszámod: <strong>${score} / ${questions.length}</strong>`;
   }
-} 
+}
+``
+
 
 
 
@@ -390,6 +401,7 @@ startBtn.addEventListener("click", () => {
       `Eredményed mentve az eredménytáblára.`;
   } */
 });
+
 
 
 
