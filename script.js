@@ -78,20 +78,24 @@ async function firestoreClearLeaderboard() {
 }
 
  // --- Játék vége: mentés + UI frissítés ---
-async function endGame(player, score, total) {
-  // UI: eredmény képernyő megjelenítése (ha nálad más az id, igazítsd)
+async function endGame() {
   quizScreen.style.display = "none";
   resultScreen.style.display = "block";
 
+  const high = Number(localStorage.getItem(HS_KEY) || 0);
+  if (score > high) localStorage.setItem(HS_KEY, String(score));
+  if (highView) highView.textContent = Math.max(score, high);
+
   try {
-    await firestoreAddResult(player, score, total);
+    await firestoreAddResult(player, score, questions.length);
     console.log("[EndGame] Mentve Firestore-ba");
   } catch (e) {
     console.error("[EndGame] Mentési hiba:", e);
   }
 
-  // Ide jöhet az eredményszöveg frissítése, rang, stb.
-  // resultText.innerHTML = ...
+  if (resultText) {
+    resultText.innerHTML = `${player}, a pontszámod: <strong>${score} / ${questions.length}</strong>`;
+  }
 } 
 
 
@@ -345,7 +349,7 @@ startBtn.addEventListener("click", () => {
     stopTimer();
     current++;
     if (current < questions.length) showQuestion();
-    else {endGame(player, score, questions.length);};
+    else { endGame(); }
   }
 
   function endGame() {
@@ -371,6 +375,7 @@ startBtn.addEventListener("click", () => {
       `Eredményed mentve az eredménytáblára.`;
   }
 });
+
 
 
 
