@@ -53,6 +53,7 @@ async function firestoreCountAttempts(name) {
 
 // ========== Firestore: eredmény mentése (COMPAT) ==========
 
+
 async function firestoreAddResult(name, score, total) {
   console.log("[AddResult] start", { name, score, total });
   try {
@@ -69,6 +70,7 @@ async function firestoreAddResult(name, score, total) {
 }
 
 
+
 // ========== Firestore: leaderboard törlése (COMPAT) ==========
 async function firestoreClearLeaderboard() {
   try {
@@ -83,6 +85,7 @@ async function firestoreClearLeaderboard() {
 
  // --- Játék vége: mentés + UI frissítés ---
 async function endGame() {
+  console.log("[EndGame] beléptem");
   quizScreen.style.display = "none";
   resultScreen.style.display = "block";
 
@@ -90,12 +93,15 @@ async function endGame() {
   if (score > high) localStorage.setItem(HS_KEY, String(score));
   if (highView) highView.textContent = Math.max(score, high);
 
-  try {
-    await firestoreAddResult(player, score, questions.length);
-    console.log("[EndGame] Mentve Firestore-ba");
-  } catch (e) {
-    console.error("[EndGame] Mentési hiba:", e);
-  }
+ 
+try {
+  console.log("[EndGame] mentés indul", { player, score, total: questions.length });
+  await firestoreAddResult(player, score, questions.length);
+  console.log("[EndGame] mentés OK");
+} catch (e) {
+  console.error("[EndGame] mentés HIBA:", e);
+}
+
 
   if (resultText) {
     resultText.innerHTML = `${player}, a pontszámod: <strong>${score} / ${questions.length}</strong>`;
@@ -356,6 +362,11 @@ startBtn.addEventListener("click", () => {
     else  endGame(); 
   }
 
+
+ console.log("[NextQuestion] Vége – endGame() hívás következik");
+ endGame();
+
+  
   function endGame() {
     quizScreen.style.display = "none";
     resultScreen.style.display = "block";
@@ -379,6 +390,7 @@ startBtn.addEventListener("click", () => {
       `Eredményed mentve az eredménytáblára.`;
   }
 });
+
 
 
 
