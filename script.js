@@ -88,7 +88,7 @@ async function firestoreClearLeaderboard() {
 
 
 
-/ --- Játék vége: mentés + UI frissítés ---
+// --- Játék vége: mentés + UI frissítés ---
 async function endGame(playerName, finalScore, totalQuestions) {
   quizScreen.style.display = "none";
   resultScreen.style.display = "block";
@@ -414,6 +414,7 @@ function nextQuestion() {
       `Eredményed mentve az eredménytáblára.`;
   } */
 });
+
 
 
 
