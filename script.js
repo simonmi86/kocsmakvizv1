@@ -367,7 +367,7 @@ startBtn.addEventListener("click", () => {
  endGame();
 
   
-  function endGame() {
+ /* function endGame() {
     quizScreen.style.display = "none";
     resultScreen.style.display = "block";
 
@@ -388,8 +388,9 @@ startBtn.addEventListener("click", () => {
       `${player}, a pontszámod: <strong>${score} / ${questions.length}</strong><br>` +
       `Rangod: <strong>${rank}</strong><br>` +
       `Eredményed mentve az eredménytáblára.`;
-  }
+  } */
 });
+
 
 
 
