@@ -1,37 +1,29 @@
+// ===== Globális állapot =====
 let player = "";
 let score = 0;
 let questions = [];
-// High score kulcs (helyi, eszközön tárolt rekordhoz)
-const HS_KEY = "kocsmakviz_highscore";
-
+const HS_KEY = "kocsmakviz_highscore"; // eszköz-rekord kulcs
 
 // ========== Firestore: leaderboard lekérdezés (COMPAT) ==========
 async function firestoreLoadLeaderboard() {
   try {
-    // 1) Lekérdezés összeállítása
-    //    Elsődleges rendezés: score DESC
-    //    (opcionális) másodlagos rendezés: playedAt DESC – ha szeretnéd, vedd fel második orderBy-ként
     let queryRef = db.collection("leaderboard").orderBy("score", "desc");
-    // Ha szeretnél másodlagos rendezést is:
-    // queryRef = queryRef.orderBy("playedAt", "desc"); // ha van index hozzá
+    // queryRef = queryRef.orderBy("playedAt", "desc"); // ha kell másodlagos rendezés + index
 
-    // 2) Lekérdezés futtatása
     const snap = await queryRef.get();
 
-    // 3) Átalakítás JS tömbbé
     const rows = [];
     snap.forEach(doc => {
       const d = doc.data() || {};
       rows.push({
-        name:  d.name  ?? "",
+        name: d.name ?? "",
         score: Number(d.score) || 0,
         total: Number(d.total) || 0,
-        playedAt: d.playedAt ?? null   // lehet Date vagy Firestore Timestamp – formázd megjelenítéskor
+        playedAt: d.playedAt ?? null // lehet Date vagy Timestamp; megjelenítéskor formázd
       });
     });
 
     return rows;
-
   } catch (err) {
     console.error("[LoadLeaderboard] Firestore hiba:", err);
     return [];
@@ -56,11 +48,12 @@ async function firestoreCountAttempts(name) {
   }
 }
 
+// ========== Firestore: eredmény mentése (COMPAT) ==========
 async function firestoreAddResult(name, score, total) {
   console.log("[AddResult] start", { name, score, total });
   try {
     await db.collection("leaderboard").add({
-      name: name,                 // ha egységesíted: name.toLowerCase()
+      name: name,                 // ha egységesíteni szeretnéd: name.toLowerCase()
       score: Number(score) || 0,
       total: Number(total) || 0,
       playedAt: new Date()
@@ -70,8 +63,6 @@ async function firestoreAddResult(name, score, total) {
     console.error("[AddResult] error", err);
   }
 }
-
-
 
 // ========== Firestore: leaderboard törlése (COMPAT) ==========
 async function firestoreClearLeaderboard() {
@@ -85,15 +76,13 @@ async function firestoreClearLeaderboard() {
   }
 }
 
-
-
-
-// --- Játék vége: mentés + UI frissítés ---
+// --- Játék vége: mentés + UI frissítés (PARAMÉTERES) ---
 async function endGame(playerName, finalScore, totalQuestions) {
+  // UI
   quizScreen.style.display = "none";
   resultScreen.style.display = "block";
 
-  // Helyi (eszköz) rekord frissítés – védetten
+  // Helyi (eszköz) rekord frissítése – védetten
   try {
     const high = Number(localStorage.getItem(HS_KEY) || 0);
     if (finalScore > high) localStorage.setItem(HS_KEY, String(finalScore));
@@ -120,10 +109,6 @@ async function endGame(playerName, finalScore, totalQuestions) {
   }
 }
 
-
-
-
-
 document.addEventListener("DOMContentLoaded", () => {
   // ======= Kérdésbank (18 kérdés) =======
   const allQuestions = [
@@ -147,20 +132,10 @@ document.addEventListener("DOMContentLoaded", () => {
     {q:"Melyik évben volt a legtöbb új hely?",a:["2022","2023","2024","2025"],correct:2}
   ];
 
-  // ======= Konstansok (storage kulcsok) =======
-  const HS_KEY     = "kocsmakviz_highscore";           // eszköz-rekord
-  const LEADER_KEY = "kocsmakviz_leaderboard_v1";      // eredménytábla
-
-  // ======= Állapot =======
+  // ======= Konstansok =======
   const TOTAL   = 10;
   const LIMIT_MS = 15000; // 15 mp/kérdés
-  let questions = [];
-  let player = "";
-  let score = 0;
-  let current = 0;
-
-  // Timer
-  let t0 = 0, rafId = null;
+  let current = 0;        // jelenlegi kérdés index
 
   // ======= DOM =======
   const nameScreen   = document.getElementById("nameScreen");
@@ -184,33 +159,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const resultText= document.getElementById("resultText");
   const tableBody = document.getElementById("leaderTableBody");
 
-  // ======= Storage segédfüggvények =======
-  const loadBoard = () => {
-    try { return JSON.parse(localStorage.getItem(LEADER_KEY) || "[]"); }
-    catch { return []; }
-  };
-  const saveBoard = (arr) => localStorage.setItem(LEADER_KEY, JSON.stringify(arr));
-
-  // DUPLA NÉV TILTÁS TÖRÖLVE → mindig felvesszük az eredményt időbélyeggel
-  const addResult = (name, pts, total) => {
-    const board = loadBoard();
-    const entry = {
-      name: String(name || "").trim(),
-      score: Number(pts) || 0,
-      total: Number(total) || TOTAL,
-      // ISO időbélyeg – ezt tesszük el, megőrizve a „mikor történt” információt
-      playedAt: new Date().toISOString()
-    };
-    board.push(entry);
-    // Rendezés: pont (desc), majd név ABC
-    board.sort((a,b)=> (b.score - a.score) || a.name.localeCompare(b.name));
-    saveBoard(board);
-  };
-
-  // ======= Kvíz segédfüggvények =======
-  const shuffle = arr => arr.map(v=>[Math.random(),v]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]);
+  // ======= Segédfüggvények =======
+  const shuffle = arr => arr.map(v => [Math.random(), v]).sort((a,b) => a[0]-b[0]).map(x => x[1]);
   const pickRandom10 = () => shuffle(allQuestions).slice(0, TOTAL);
 
+  // Timer
+  let t0 = 0, rafId = null;
   function startTimer() {
     cancelAnimationFrame(rafId);
     t0 = performance.now();
@@ -245,15 +199,23 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // ======= Admin nézet (kmadmin) =======
+  // ======= Admin (kmadmin) =======
   function showAdminScreen() {
     nameScreen.style.display   = "none";
     quizScreen.style.display   = "none";
     resultScreen.style.display = "none";
     adminScreen.style.display  = "block";
-    renderBoard();
+    renderBoard(); // jelenleg localStorage-t tölt; ha Firestore-t akarsz, hívd a firestoreLoadLeaderboard()-ot és azzal töltsd
   }
 
+  // (Jelenleg a táblázat a localStorage "board"-ból tölt; ha felhős listát akarsz, írok hozzá kis refaktort.)
+  function loadBoard() {
+    try { return JSON.parse(localStorage.getItem("kocsmakviz_leaderboard_v1") || "[]"); }
+    catch { return []; }
+  }
+  function saveBoard(arr) {
+    localStorage.setItem("kocsmakviz_leaderboard_v1", JSON.stringify(arr));
+  }
   function renderBoard() {
     const board = loadBoard();
     if (!tableBody) return;
@@ -261,7 +223,6 @@ document.addEventListener("DOMContentLoaded", () => {
       tableBody.innerHTML = `<tr><td colspan="5" style="opacity:.8">Nincs még tárolt eredmény.</td></tr>`;
       return;
     }
-    // Rendezés (biztonságból újra): pont desc, név ABC
     board.sort((a,b)=> (b.score - a.score) || a.name.localeCompare(b.name));
     tableBody.innerHTML = board.map((e, i) => {
       const d = e.playedAt ? new Date(e.playedAt) : new Date();
@@ -278,30 +239,22 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ======= Start gomb =======
-startBtn.addEventListener("click", () => {
+  startBtn.addEventListener("click", () => {
     const name = (playerName.value || "").trim();
-    if (!name) { 
-        alert("Kérlek add meg a neved!"); 
-        return; 
-    }
+    if (!name) { alert("Kérlek add meg a neved!"); return; }
 
-    // ---- ADMIN mód ----
-    if (name === "kmadmin") {
-        showAdminScreen();
-        return;
-    }
+    // ADMIN mód
+    if (name === "kmadmin") { showAdminScreen(); return; }
 
-    // ---- 5 próbálkozás limit névre ----
+    // 5 próbálkozás limit névre (jelenleg localStorage alapján)
     const board = loadBoard();
-    const attempts = board.filter(e => e.name.toLowerCase() === name.toLowerCase()).length;
-
+    const attempts = board.filter(e => (e.name || "").toLowerCase() === name.toLowerCase()).length;
     if (attempts >= 5) {
-        alert("Ezzel a névvel elérted az 5 próbálkozás limitet. "
-            + "Töröld az eredménytáblát az új próbálkozáshoz.");
-        return;
+      alert("Ezzel a névvel elérted az 5 próbálkozás limitet. Töröld az eredménytáblát az új próbálkozáshoz.");
+      return;
     }
 
-    // ---- Kvíz indul ----
+    // Kvíz indul
     player = name;
     score = 0;
     current = 0;
@@ -319,7 +272,7 @@ startBtn.addEventListener("click", () => {
     quizScreen.style.display   = "block";
 
     showQuestion();
-});
+  });
 
   // ======= Admin gombok =======
   clearBoardBtn?.addEventListener("click", () => {
@@ -347,9 +300,9 @@ startBtn.addEventListener("click", () => {
     const newCorrect = shuffled.findIndex(o => o.idx === q.correct);
     q.correct = newCorrect;
 
-    answersEl.innerHTML = shuffled.map((o,i)=>
-      `<button class="answerBtn" data-id="${i}">${o.text}</button>`
-    ).join("");
+    answersEl.innerHTML = shuffled
+      .map((o,i)=> `<button class="answerBtn" data-id="${i}">${o.text}</button>`)
+      .join("");
 
     unlockAnswers();
     answersEl.querySelectorAll(".answerBtn").forEach(btn => {
@@ -369,62 +322,14 @@ startBtn.addEventListener("click", () => {
     startTimer();
   }
 
-  
-function nextQuestion() {
-  stopTimer();
-  current++;
-  
-
- if (current < questions.length) {
-   showQuestion();
- } else {
-   console.log("[NextQuestion] Vége – endGame() hívás következik, args:", { player, score, total: questions.length });
-   endGame(player, score, questions.length);   // <-- PARAMÉTERREL HÍVJUK
- }
-}
-
-
-
-
-
- console.log("[NextQuestion] Vége – endGame() hívás következik");
- endGame();
-
-  
- /* function endGame() {
-    quizScreen.style.display = "none";
-    resultScreen.style.display = "block";
-
-    // eszköz-rekord frissítése
-    const high = Number(localStorage.getItem(HS_KEY) || 0);
-    if (score > high) localStorage.setItem(HS_KEY, String(score));
-    if (highView) highView.textContent = Math.max(score, high);
-
-    // Eredmény mentése (NINCS dupla név tiltás) + időbélyeg eltárolása
-    addResult(player, score, questions.length);
-
-    const rank = score >= 9 ? "Elit kocsma‑matematikus 🍻"
-               : score >= 7 ? "Haladó túraszakértő 🍺"
-               : score >= 5 ? "Rutin kocsmaturista 🍻"
-               : "Kezdő felfedező 🍺";
-
-    resultText.innerHTML =
-      `${player}, a pontszámod: <strong>${score} / ${questions.length}</strong><br>` +
-      `Rangod: <strong>${rank}</strong><br>` +
-      `Eredményed mentve az eredménytáblára.`;
-  } */
+  function nextQuestion() {
+    stopTimer();
+    current++;
+    if (current < questions.length) {
+      showQuestion();
+    } else {
+      console.log("[NextQuestion] Vége – endGame() hívás következik, args:", { player, score, total: questions.length });
+      endGame(player, score, questions.length); // PARAMÉTERREL hívjuk
+    }
+  }
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
