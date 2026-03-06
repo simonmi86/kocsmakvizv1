@@ -2,34 +2,66 @@
 <html lang="hu">
 <head>
 <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Kocsmakvíz – Online verzió</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
 <div id="container">
-    <h2>Kocsmakvíz 🍻</h2>
+  <h2>Kocsmakvíz 🍻</h2>
 
-    <div id="nameScreen">
-        <p>Add meg a neved:</p>
-        <input id="playerName" placeholder="Név...">
-        <br><br>
-        <button id="startBtn">Játék indítása</button>
-    </div>
+  <!-- Start / név bekérés -->
+  <div id="nameScreen">
+    <p>Add meg a neved <small>(ha <strong>kmadmin</strong>, az eredménytábla jelenik meg)</small>:</p>
+    <input id="playerName" placeholder="Név..." />
+    <br><br>
+    <button id="startBtn">Játék indítása</button>
+  </div>
 
-    <div id="quizScreen" style="display:none;">
-        <h3 id="question"></h3>
-        <div id="answers"></div>
+  <!-- Admin képernyő: kmadmin névre -->
+  <div id="adminScreen" style="display:none;">
+    <h3>Eredménytábla</h3>
+    <div class="adminActions">
+      <button id="clearBoardBtn" class="danger">Eredménytábla törlése</button>
+      <button id="backBtn">Vissza a kezdőképernyőre</button>
     </div>
+    <div class="tableWrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Név</th>
+            <th>Pont</th>
+            <th/ style="white-space:nowrap;">Összes kérdés</th>
+            <th>Dátum</th>
+          </tr>
+        </thead>
+        <tbody id="leaderTableBody"></tbody>
+      </table>
+    </div>
+  </div>
 
-    <div id="resultScreen" style="display:none;">
-        <h2 id="resultText"></h2>
-        <button onclick="location.reload()">Újra játszom</button>
+  <!-- Kvíz képernyő -->
+  <div id="quizScreen" style="display:none;">
+    <div id="hud">
+      <div class="badge">Kérdés: <span id="qNum">1</span>/<span id="qTotal">10</span></div>
+      <div class="badge">Pont: <span id="scoreView">0</span></div>
+      <div class="badge">Rekord (eszköz): <span id="highView">0</span></div>
     </div>
+    <div id="timerWrap"><div id="timerBar"></div></div>
+
+    <h3 id="question"></h3>
+    <div id="answers"></div>
+  </div>
+
+  <!-- Eredmény -->
+  <div id="resultScreen" style="display:none;">
+    <h2 id="resultText"></h2>
+    <button onclick="location.reload()">Újra játszom</button>
+  </div>
 </div>
 
 <script src="script.js"></script>
 </body>
-
 </html>
