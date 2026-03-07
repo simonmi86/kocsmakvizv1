@@ -1,0 +1,92 @@
+[
+  {
+    "q": "Melyik utca szerepelt a legtöbbször eddig?",
+    "a": ["Kazinczy u.","Erzsébet körút","Kertész u.","Wesselényi u."],
+    "correct": 1
+  },
+  {
+    "q": "Melyik évben volt a legtöbb kocsma látogatásunk?",
+    "a": ["2018","2019","2023","2024"],
+    "correct": 2
+  },
+  {
+    "q": "Melyik hónap volt a legerősebb?",
+    "a": ["Április","Július","Október","November"],
+    "correct": 2
+  },
+  {
+    "q": "Melyik helyet látogattuk a legtöbbször?",
+    "a": ["Főbejárat","Krúdy","57-es italbolt","Bakegér"],
+    "correct": 1
+  },
+  {
+    "q": "Melyik évben volt a legtöbb olyan utca ahol két helyszínen is voltunk?",
+    "a": ["2018","2019","2023","2024"],
+    "correct": 2
+  },
+  {
+    "q": "Melyik utca volt az elmúlt 10 évben folyamatosan?",
+    "a": ["Klauzál","Erzsébet körút","Dob","Tompa"],
+    "correct": 1
+  },
+  {
+    "q": "Melyik kerület dominál?",
+    "a": ["6.","7.","8.","9."],
+    "correct": 1
+  },
+  {
+    "q": "Melyik a kocsma háromszög?",
+    "a": ["Király–Kazinczy–Dob","Ráday–Mester–Tompa","Nagymező–Paulay–Andrássy","Üllői–Lónyay–Bakáts"],
+    "correct": 0
+  },
+  {
+    "q": "Hány év telt el az első kocsmaraton óta?",
+    "a": ["8","10","12","13"],
+    "correct": 3
+  },
+  {
+    "q": "Melyik utca szerepelt 7-szer is?",
+    "a": ["Klauzál","Wesselényi","Kazinczy","Ráday"],
+    "correct": 1
+  },
+  {
+    "q": "Melyik évben volt a legkevesebb látogatás 2013 után?",
+    "a": ["2015","2017","2021","2024"],
+    "correct": 2
+  },
+  {
+    "q": "Melyik utcában van a legtöbb hely ahol jártunk?",
+    "a": ["József körút","Erzsébet körút","Wesselényi","Akácfa"],
+    "correct": 1
+  },
+  {
+    "q": "Melyik hónap teljesen üres?",
+    "a": ["Április","Október","Június","December"],
+    "correct": 3
+  },
+  {
+    "q": "Mikor tértél vissza a Nagytemplom utcára?",
+    "a": ["2020","2021","2022","2023"],
+    "correct": 1
+  },
+  {
+    "q": "Mikor jelent meg először Bakáts környéke?",
+    "a": ["2018","2019","2022","2024"],
+    "correct": 2
+  },
+  {
+    "q": "Hányszor szerepel a Lónyay utca?",
+    "a": ["1","2","3","4"],
+    "correct": 1
+  },
+  {
+    "q": "Mi NEM szerepelt 2013-ban?",
+    "a": ["Hunyadi tér","Rákóczi","Kazinczy","Ráday"],
+    "correct": 3
+  },
+  {
+    "q": "Melyik évben volt a legtöbb új hely?",
+    "a": ["2022","2023","2024","2025"],
+    "correct": 2
+  }
+]
