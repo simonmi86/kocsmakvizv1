@@ -9,7 +9,6 @@ async function firestoreLoadLeaderboard() {
   try {
     let queryRef = db.collection("leaderboard").orderBy("score", "desc");
     // queryRef = queryRef.orderBy("playedAt", "desc"); // ha kell másodlagos rendezés + index
-
     const snap = await queryRef.get();
 
     const rows = [];
@@ -22,7 +21,6 @@ async function firestoreLoadLeaderboard() {
         playedAt: d.playedAt ?? null // lehet Date vagy Timestamp; megjelenítéskor formázd
       });
     });
-
     return rows;
   } catch (err) {
     console.error("[LoadLeaderboard] Firestore hiba:", err);
@@ -34,13 +32,11 @@ async function firestoreLoadLeaderboard() {
 async function firestoreCountAttempts(name) {
   if (!name || !name.trim()) return 0;
   const normalized = name.trim(); // vagy .toLowerCase()
-
   try {
     const snap = await db
       .collection("leaderboard")
       .where("name", "==", normalized)
       .get();
-
     return snap.size;
   } catch (err) {
     console.error("[CountAttempts] Firestore hiba:", err);
@@ -53,7 +49,7 @@ async function firestoreAddResult(name, score, total) {
   console.log("[AddResult] start", { name, score, total });
   try {
     await db.collection("leaderboard").add({
-      name: name,                 // ha egységesíteni szeretnéd: name.toLowerCase()
+      name: name,                 // egységesítéshez használhatsz: String(name).trim().toLowerCase()
       score: Number(score) || 0,
       total: Number(total) || 0,
       playedAt: new Date()
@@ -75,92 +71,6 @@ async function firestoreClearLeaderboard() {
     console.error("[ClearLeaderboard] Firestore hiba:", err);
   }
 }
-
-// --- Játék vége: mentés + UI frissítés (PARAMÉTERES) ---
-async function endGame(playerName, finalScore, totalQuestions) {
-  // UI
-  quizScreen.style.display = "none";
-  resultScreen.style.display = "block";
-
-  // Helyi (eszköz) rekord frissítése – védetten
-  try {
-    const high = Number(localStorage.getItem(HS_KEY) || 0);
-    if (finalScore > high) localStorage.setItem(HS_KEY, String(finalScore));
-    if (typeof highView !== "undefined" && highView) {
-      highView.textContent = String(Math.max(finalScore, high));
-    }
-  } catch (e) {
-    console.warn("[EndGame] High score frissítés kihagyva:", e);
-  }
-
-  // Firestore mentés (COMPAT)
-  try {
-    console.log("[EndGame] mentés indul", { playerName, finalScore, totalQuestions });
-    await firestoreAddResult(playerName, finalScore, totalQuestions);
-    console.log("[EndGame] Mentve Firestore-ba");
-  } catch (e) {
-    console.error("[EndGame] Mentési hiba:", e);
-  }
-
-  // Eredmény kiírás
-  if (typeof resultText !== "undefined" && resultText) {
-    resultText.innerHTML =
-      `${playerName}, a pontszámod: <strong>${finalScore} / ${totalQuestions}</strong>`;
-  }
-}
-
- async function showAdminScreen() {
-  // UI váltás
-  nameScreen.style.display   = "none";
-  quizScreen.style.display   = "none";
-  resultScreen.style.display = "none";
-  adminScreen.style.display  = "block";
-
-  // <tbody> lekérése
-  const tableBody = document.getElementById("leaderTableBody");
-  if (!tableBody) {
-    console.warn("[Admin] Nincs #leaderTableBody a DOM-ban.");
-    return;
-  }
-
-  // ideiglenes állapot
-  tableBody.innerHTML = `<tr><td colspan="5" style="opacity:.8">Betöltés…</td></tr>`;
-
-  try {
-    const rows = await firestoreLoadLeaderboard(); // ← Firestore-ból jönnek a sorok
-
-    if (!rows.length) {
-      tableBody.innerHTML = `<tr><td colspan="5" style="opacity:.8">Nincs még tárolt eredmény.</td></tr>`;
-      return;
-    }
-
-    // Timestamp/Date biztonságos formázása
-    const toDate = (p) => (p?.toDate ? p.toDate() : new Date(p || Date.now()));
-    const fmt = (d) => {
-      const Y=d.getFullYear(), M=String(d.getMonth()+1).padStart(2,'0'),
-            D=String(d.getDate()).padStart(2,'0'), h=String(d.getHours()).padStart(2,'0'),
-            m=String(d.getMinutes()).padStart(2,'0');
-      return `${Y}-${M}-${D} ${h}:${m}`;
-    };
-
-    // táblázat kirajzolása
-    tableBody.innerHTML = rows.map((e, i) => {
-      const d = toDate(e.playedAt);
-      return `<tr>
-        <td>${i+1}</td>
-        <td>${e.name}</td>
-        <td>${e.score}</td>
-        <td>${e.total}</td>
-        <td>${fmt(d)}</td>
-      </tr>`;
-    }).join("");
-  } catch (e) {
-    console.error("[Admin] betöltési hiba:", e);
-    tableBody.innerHTML = `<tr><td colspan="5" style="opacity:.8">Hiba történt a betöltés közben.</td></tr>`;
-  }
-}
-``
-
 
 document.addEventListener("DOMContentLoaded", () => {
   // ======= Kérdésbank (18 kérdés) =======
@@ -210,8 +120,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const questionEl= document.getElementById("question");
   const answersEl = document.getElementById("answers");
   const resultText= document.getElementById("resultText");
-  // Admin táblázat <tbody> – itt is lekérjük (renderBoard is lekéri majd helyben)
-  // const tableBody = document.getElementById("leaderTableBody");
+  // const tableBody = document.getElementById("leaderTableBody"); // showAdminScreen / renderBoard helyben kérdezi le
 
   // ======= Segédfüggvények =======
   const shuffle = arr => arr.map(v => [Math.random(), v]).sort((a,b) => a[0]-b[0]).map(x => x[1]);
@@ -253,8 +162,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // ======= Admin (kmadmin) =======
-  // LocalStorage alapú lista; ha Firestore-ból akarod tölteni, lásd lejjebb showAdminScreen-ben
+  // ======= Admin (kmadmin) ======= — localStorage segédek (ha offline listát is akarsz)
   function loadBoard() {
     try { return JSON.parse(localStorage.getItem("kocsmakviz_leaderboard_v1") || "[]"); }
     catch { return []; }
@@ -286,8 +194,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }).join("");
   }
 
-
-  
+  // 🔥 Firestore‑os admin betöltés
   async function showAdminScreen() {
     // UI váltás
     nameScreen.style.display   = "none";
@@ -295,38 +202,43 @@ document.addEventListener("DOMContentLoaded", () => {
     resultScreen.style.display = "none";
     adminScreen.style.display  = "block";
 
-    // Jelenleg a localStorage-os táblát rendereljük:
-    renderBoard();
-
-    // Ha Firestore-ból szeretnéd tölteni:
-    /*
     const tableBody = document.getElementById("leaderTableBody");
-    if (!tableBody) return;
+    if (!tableBody) {
+      console.warn("[Admin] Nincs #leaderTableBody a DOM-ban.");
+      return;
+    }
+
     tableBody.innerHTML = `<tr><td colspan="5" style="opacity:.8">Betöltés…</td></tr>`;
+
     try {
-      const rows = await firestoreLoadLeaderboard();
+      const rows = await firestoreLoadLeaderboard();   // Firestore-ból jönnek a sorok
       if (!rows.length) {
         tableBody.innerHTML = `<tr><td colspan="5" style="opacity:.8">Nincs még tárolt eredmény.</td></tr>`;
         return;
       }
-      const toDate = p => p?.toDate ? p.toDate() : new Date(p || Date.now());
+
+      const toDate = (p) => (p?.toDate ? p.toDate() : new Date(p || Date.now()));
+      const fmt = (d) => {
+        const Y=d.getFullYear(), M=String(d.getMonth()+1).padStart(2,'0'),
+              D=String(d.getDate()).padStart(2,'0'), h=String(d.getHours()).padStart(2,'0'),
+              m=String(d.getMinutes()).padStart(2,'0');
+        return `${Y}-${M}-${D} ${h}:${m}`;
+      };
+
       tableBody.innerHTML = rows.map((e, i) => {
         const d = toDate(e.playedAt);
-        const dt = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} `
-                 + `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
         return `<tr>
           <td>${i+1}</td>
           <td>${e.name}</td>
           <td>${e.score}</td>
           <td>${e.total}</td>
-          <td>${dt}</td>
+          <td>${fmt(d)}</td>
         </tr>`;
       }).join("");
     } catch (e) {
       console.error("[Admin] betöltési hiba:", e);
       tableBody.innerHTML = `<tr><td colspan="5" style="opacity:.8">Hiba történt a betöltés közben.</td></tr>`;
     }
-    */
   }
 
   // ======= Start gomb =======
@@ -366,21 +278,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ======= Admin gombok =======
   clearBoardBtn?.addEventListener("click", async () => {
-  if (!confirm("Biztosan törlöd az összes eredményt?")) return;
+    if (!confirm("Biztosan törlöd az összes eredményt?")) return;
+    try {
+      await firestoreClearLeaderboard(); // Firestore kiürítése
+      await showAdminScreen();           // azonnali újratöltés Firestore-ból
+      alert("Eredménytábla törölve.");
+    } catch (e) {
+      console.error("[Admin] törlés hiba:", e);
+      alert("Hiba történt a törlés közben.");
+    }
+  });
 
-  try {
-    // 1) Törlés a Firestore-ból
-    await firestoreClearLeaderboard();
-
-    // 2) Admin tábla újratöltése Firestore-ból
-    await showAdminScreen();
-
-    alert("Eredménytábla törölve.");
-  } catch (e) {
-    console.error("[Admin] törlés hiba:", e);
-    alert("Hiba történt a törlés közben.");
-  }
-});
   backBtn?.addEventListener("click", () => {
     adminScreen.style.display = "none";
     nameScreen.style.display  = "block";
@@ -431,11 +339,37 @@ document.addEventListener("DOMContentLoaded", () => {
       endGame(player, score, questions.length); // PARAMÉTERREL hívjuk
     }
   }
+
+  // --- Játék vége: mentés + UI frissítés (PARAMÉTERES) ---
+  async function endGame(playerName, finalScore, totalQuestions) {
+    // UI
+    quizScreen.style.display = "none";
+    resultScreen.style.display = "block";
+
+    // Helyi (eszköz) rekord frissítése – védetten
+    try {
+      const high = Number(localStorage.getItem(HS_KEY) || 0);
+      if (finalScore > high) localStorage.setItem(HS_KEY, String(finalScore));
+      if (typeof highView !== "undefined" && highView) {
+        highView.textContent = String(Math.max(finalScore, high));
+      }
+    } catch (e) {
+      console.warn("[EndGame] High score frissítés kihagyva:", e);
+    }
+
+    // Firestore mentés (COMPAT)
+    try {
+      console.log("[EndGame] mentés indul", { playerName, finalScore, totalQuestions });
+      await firestoreAddResult(playerName, finalScore, totalQuestions);
+      console.log("[EndGame] Mentve Firestore-ba");
+    } catch (e) {
+      console.error("[EndGame] Mentési hiba:", e);
+    }
+
+    // Eredmény kiírás
+    if (typeof resultText !== "undefined" && resultText) {
+      resultText.innerHTML =
+        `${playerName}, a pontszámod: <strong>${finalScore} / ${totalQuestions}</strong>`;
+    }
+  }
 });
-
-
-
-
-
-
-
