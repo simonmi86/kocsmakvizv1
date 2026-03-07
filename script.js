@@ -263,26 +263,29 @@ document.addEventListener("DOMContentLoaded", () => {
     localStorage.setItem("kocsmakviz_leaderboard_v1", JSON.stringify(arr));
   }
   function renderBoard() {
-    const board = loadBoard();
-    if (!tableBody) return;
-    if (!board.length) {
-      tableBody.innerHTML = `<tr><td colspan="5" style="opacity:.8">Nincs még tárolt eredmény.</td></tr>`;
-      return;
-    }
-    board.sort((a,b)=> (b.score - a.score) || a.name.localeCompare(b.name));
-    tableBody.innerHTML = board.map((e, i) => {
-      const d = e.playedAt ? new Date(e.playedAt) : new Date();
-      const dt = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} `
-               + `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-      return `<tr>
-        <td>${i+1}</td>
-        <td>${e.name}</td>
-        <td>${e.score}</td>
-        <td>${e.total || TOTAL}</td>
-        <td>${dt}</td>
-      </tr>`;
-    }).join("");
+  // 🔧 Lekérdezzük HELYBEN
+  const tableBody = document.getElementById("leaderTableBody");
+  if (!tableBody) return;
+
+  const board = loadBoard();
+  if (!board.length) {
+    tableBody.innerHTML = `<tr><td colspan="5" style="opacity:.8">Nincs még tárolt eredmény.</td></tr>`;
+    return;
   }
+  board.sort((a,b)=> (b.score - a.score) || a.name.localeCompare(b.name));
+  tableBody.innerHTML = board.map((e, i) => {
+    const d = e.playedAt ? new Date(e.playedAt) : new Date();
+    const dt = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} `
+             + `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    return `<tr>
+      <td>${i+1}</td>
+      <td>${e.name}</td>
+      <td>${e.score}</td>
+      <td>${e.total || TOTAL}</td>
+      <td>${dt}</td>
+    </tr>`;
+  }).join("");
+}
 
   // ======= Start gomb =======
   + startBtn.addEventListener("click", async () => {
@@ -378,5 +381,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 });
+
 
 
