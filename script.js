@@ -128,7 +128,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   
   // ======= Kérdésbank (18 kérdés) =======
-  const allQuestions = [
+ /* const allQuestions = [
     {q:"Melyik utca szerepelt a legtöbbször?",a:["Kazinczy u.","Erzsébet körút","Kertész u.","Wesselényi u."],correct:1},
     {q:"Melyik évben volt a legtöbb látogatásod?",a:["2018","2019","2023","2024"],correct:2},
     {q:"Melyik hónap volt a legerősebb?",a:["Április","Július","Október","November"],correct:2},
@@ -147,7 +147,7 @@ document.addEventListener("DOMContentLoaded", () => {
     {q:"Hányszor szerepel a Lónyay utca?",a:["1","2","3","4"],correct:1},
     {q:"Mi NEM szerepelt 2013-ban?",a:["Hunyadi tér","Rákóczi","Kazinczy","Ráday"],correct:3},
     {q:"Melyik évben volt a legtöbb új hely?",a:["2022","2023","2024","2025"],correct:2}
-  ];
+  ];*/
 
   // ======= Konstansok =======
   // const TOTAL   = 10;
@@ -178,7 +178,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ======= Segédfüggvények =======
   const shuffle = arr => arr.map(v => [Math.random(), v]).sort((a,b) => a[0]-b[0]).map(x => x[1]);
-  const pickRandom10 = () => shuffle(allQuestions).slice(0, TOTAL);
+ // const pickRandom10 = () => shuffle(allQuestions).slice(0, TOTAL);
 
   // Timer
   let t0 = 0, rafId = null;
@@ -314,7 +314,7 @@ document.addEventListener("DOMContentLoaded", () => {
     player = name;
     score = 0;
     current = 0;
-    questions = pickRandom10();
+ //   questions = pickRandom10();
 
     if (qTotal) qTotal.textContent = TOTAL;
     if (scoreView) scoreView.textContent = score;
@@ -427,5 +427,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 });
+
 
 
