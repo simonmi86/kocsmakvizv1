@@ -109,52 +109,6 @@ async function endGame(playerName, finalScore, totalQuestions) {
   }
 }
 
-async function showAdminScreen() {
-  // 🔧 FONTOS: kérdezzük le helyben, így biztosan létezik ebben a scope-ban
-  const tableBody = document.getElementById("leaderTableBody");
-
-  // UI váltás
-  nameScreen.style.display   = "none";
-  quizScreen.style.display   = "none";
-  resultScreen.style.display = "none";
-  adminScreen.style.display  = "block";
-
-  // Ha nincs is táblázat a DOM-ban, lépjünk ki biztonságosan
-  if (!tableBody) {
-    console.warn("[Admin] Nincs #leaderTableBody a DOM-ban.");
-    return;
-  }
-
-  // Ha most még a localStorage-os renderBoard-ot használod:
-  renderBoard();
-
-  // (Ha Firestore-ból akarsz tölteni, a fenti sort cseréld a következőre:)
-  /*
-  tableBody.innerHTML = `<tr><td colspan="5" style="opacity:.8">Betöltés…</td></tr>`;
-  try {
-    const rows = await firestoreLoadLeaderboard(); // Firestore-ból
-    if (!rows.length) {
-      tableBody.innerHTML = `<tr><td colspan="5" style="opacity:.8">Nincs még tárolt eredmény.</td></tr>`;
-      return;
-    }
-    tableBody.innerHTML = rows.map((e, i) => {
-      const d = e.playedAt?.toDate ? e.playedAt.toDate() : new Date(e.playedAt || Date.now());
-      const dt = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} `
-               + `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-      return `<tr>
-        <td>${i+1}</td>
-        <td>${e.name}</td>
-        <td>${e.score}</td>
-        <td>${e.total}</td>
-        <td>${dt}</td>
-      </tr>`;
-    }).join("");
-  } catch (e) {
-    console.error("[Admin] betöltési hiba:", e);
-    tableBody.innerHTML = `<tr><td colspan="5" style="opacity:.8">Hiba történt a betöltés közben.</td></tr>`;
-  }
-  */
-}
 document.addEventListener("DOMContentLoaded", () => {
   // ======= Kérdésbank (18 kérdés) =======
   const allQuestions = [
@@ -203,7 +157,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const questionEl= document.getElementById("question");
   const answersEl = document.getElementById("answers");
   const resultText= document.getElementById("resultText");
-  const tableBody = document.getElementById("leaderTableBody");
+  // Admin táblázat <tbody> – itt is lekérjük (renderBoard is lekéri majd helyben)
+  // const tableBody = document.getElementById("leaderTableBody");
 
   // ======= Segédfüggvények =======
   const shuffle = arr => arr.map(v => [Math.random(), v]).sort((a,b) => a[0]-b[0]).map(x => x[1]);
@@ -246,15 +201,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ======= Admin (kmadmin) =======
-  /*function showAdminScreen() {
-    nameScreen.style.display   = "none";
-    quizScreen.style.display   = "none";
-    resultScreen.style.display = "none";
-    adminScreen.style.display  = "block";
-    renderBoard(); // jelenleg localStorage-t tölt; ha Firestore-t akarsz, hívd a firestoreLoadLeaderboard()-ot és azzal töltsd
-  }
-*/
-  // (Jelenleg a táblázat a localStorage "board"-ból tölt; ha felhős listát akarsz, írok hozzá kis refaktort.)
+  // LocalStorage alapú lista; ha Firestore-ból akarod tölteni, lásd lejjebb showAdminScreen-ben
   function loadBoard() {
     try { return JSON.parse(localStorage.getItem("kocsmakviz_leaderboard_v1") || "[]"); }
     catch { return []; }
@@ -263,39 +210,79 @@ document.addEventListener("DOMContentLoaded", () => {
     localStorage.setItem("kocsmakviz_leaderboard_v1", JSON.stringify(arr));
   }
   function renderBoard() {
-  // 🔧 Lekérdezzük HELYBEN
-  const tableBody = document.getElementById("leaderTableBody");
-  if (!tableBody) return;
+    const tableBody = document.getElementById("leaderTableBody"); // HELYBEN kérdezzük le
+    if (!tableBody) return;
 
-  const board = loadBoard();
-  if (!board.length) {
-    tableBody.innerHTML = `<tr><td colspan="5" style="opacity:.8">Nincs még tárolt eredmény.</td></tr>`;
-    return;
+    const board = loadBoard();
+    if (!board.length) {
+      tableBody.innerHTML = `<tr><td colspan="5" style="opacity:.8">Nincs még tárolt eredmény.</td></tr>`;
+      return;
+    }
+    board.sort((a,b)=> (b.score - a.score) || a.name.localeCompare(b.name));
+    tableBody.innerHTML = board.map((e, i) => {
+      const d = e.playedAt ? new Date(e.playedAt) : new Date();
+      const dt = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} `
+               + `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+      return `<tr>
+        <td>${i+1}</td>
+        <td>${e.name}</td>
+        <td>${e.score}</td>
+        <td>${e.total || TOTAL}</td>
+        <td>${dt}</td>
+      </tr>`;
+    }).join("");
   }
-  board.sort((a,b)=> (b.score - a.score) || a.name.localeCompare(b.name));
-  tableBody.innerHTML = board.map((e, i) => {
-    const d = e.playedAt ? new Date(e.playedAt) : new Date();
-    const dt = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} `
-             + `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-    return `<tr>
-      <td>${i+1}</td>
-      <td>${e.name}</td>
-      <td>${e.score}</td>
-      <td>${e.total || TOTAL}</td>
-      <td>${dt}</td>
-    </tr>`;
-  }).join("");
-}
+
+  async function showAdminScreen() {
+    // UI váltás
+    nameScreen.style.display   = "none";
+    quizScreen.style.display   = "none";
+    resultScreen.style.display = "none";
+    adminScreen.style.display  = "block";
+
+    // Jelenleg a localStorage-os táblát rendereljük:
+    renderBoard();
+
+    // Ha Firestore-ból szeretnéd tölteni:
+    /*
+    const tableBody = document.getElementById("leaderTableBody");
+    if (!tableBody) return;
+    tableBody.innerHTML = `<tr><td colspan="5" style="opacity:.8">Betöltés…</td></tr>`;
+    try {
+      const rows = await firestoreLoadLeaderboard();
+      if (!rows.length) {
+        tableBody.innerHTML = `<tr><td colspan="5" style="opacity:.8">Nincs még tárolt eredmény.</td></tr>`;
+        return;
+      }
+      const toDate = p => p?.toDate ? p.toDate() : new Date(p || Date.now());
+      tableBody.innerHTML = rows.map((e, i) => {
+        const d = toDate(e.playedAt);
+        const dt = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} `
+                 + `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+        return `<tr>
+          <td>${i+1}</td>
+          <td>${e.name}</td>
+          <td>${e.score}</td>
+          <td>${e.total}</td>
+          <td>${dt}</td>
+        </tr>`;
+      }).join("");
+    } catch (e) {
+      console.error("[Admin] betöltési hiba:", e);
+      tableBody.innerHTML = `<tr><td colspan="5" style="opacity:.8">Hiba történt a betöltés közben.</td></tr>`;
+    }
+    */
+  }
 
   // ======= Start gomb =======
-  + startBtn.addEventListener("click", async () => {
+  startBtn.addEventListener("click", async () => {
     const name = (playerName.value || "").trim();
     if (!name) { alert("Kérlek add meg a neved!"); return; }
 
     // ADMIN mód
     if (name === "kmadmin") { showAdminScreen(); return; }
 
-    // 5 próbálkozás limit névre (jelenleg localStorage alapján)
+    // 5 próbálkozás limit névre – Firestore-ból
     const attempts = await firestoreCountAttempts(name);
     if (attempts >= 5) {
       alert("Ezzel a névvel elérted az 5 próbálkozás limitet. Töröld az eredménytáblát az új próbálkozáshoz.");
