@@ -84,6 +84,16 @@
     "a": ["Hunyadi tér","Rákóczi","Kazinczy","Ráday"],
     "correct": 3
   },
+   {
+    "q": "Hány különböző nyertes neve szerepel a vándorserlegen?",
+    "a": ["8","13","16","10"],
+    "correct": 1
+  },
+  {
+    "q": "Hány női részt vevő nyert már?",
+    "a": ["0","3","5","1"],
+    "correct": 1
+  },
   {
     "q": "Melyik évben volt a legtöbb új hely?",
     "a": ["2022","2023","2024","2025"],
