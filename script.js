@@ -285,7 +285,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }).join("");
   }
 
-  async function showAdminScreen() {
+/*  async function showAdminScreen() {
     // UI váltás
     nameScreen.style.display   = "none";
     quizScreen.style.display   = "none";
@@ -429,6 +429,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 });
+
 
 
 
