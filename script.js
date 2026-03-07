@@ -73,6 +73,60 @@ async function firestoreClearLeaderboard() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+
+// ---- Kérdésbank betöltése JSON-ból ----
+let bank = [];        // a teljes kérdésbank (JSON)
+const TOTAL = 10;     // menetenként ennyi kérdés
+
+async function loadQuestions() {
+  // cache-bust: GitHub Pages-n ne kapj régi fájlt
+  const res = await fetch(`questions.json?v=${Date.now()}`);
+  if (!res.ok) throw new Error(`questions.json letöltési hiba: ${res.status}`);
+  const data = await res.json();
+
+  // alapszintű validáció
+  if (!Array.isArray(data) || data.length < TOTAL) {
+    console.warn("[Questions] Kevés kérdés vagy hibás formátum a questions.json-ben.");
+  }
+  bank = data;
+}
+
+// Véletlen sorrendből kivágunk TOTAL darabot
+function pickRandomFromBank() {
+  return bank
+    .map(v => [Math.random(), v])
+    .sort((a,b) => a[0]-b[0])
+    .map(x => x[1])
+    .slice(0, TOTAL);
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  // ... itt jönnek a DOM elemek lekérései (startBtn, playerName, stb.) ...
+
+  // --- Start gomb átmeneti letiltása, amíg a kérdések betöltődnek ---
+  const originalStartLabel = startBtn.textContent;
+  startBtn.disabled = true;
+  startBtn.textContent = "Betöltés…";
+
+  loadQuestions()
+    .then(() => {
+      // siker: Start gomb engedélyezése
+      startBtn.disabled = false;
+      startBtn.textContent = originalStartLabel;
+    })
+    .catch(err => {
+      console.error("[Questions] Betöltési hiba:", err);
+      startBtn.textContent = "Hiba a betöltésnél";
+      alert("Nem sikerült betölteni a kérdéseket (questions.json). Kérlek frissítsd az oldalt.");
+      // ha szeretnéd, itt is visszaengedheted, de alapértelmezetten tiltva hagyjuk
+    });
+
+  // ... itt mehet tovább a kódod (gomb listenerek, stb.) ...
+});
+  
+
+
+  
   // ======= Kérdésbank (18 kérdés) =======
   const allQuestions = [
     {q:"Melyik utca szerepelt a legtöbbször?",a:["Kazinczy u.","Erzsébet körút","Kertész u.","Wesselényi u."],correct:1},
@@ -373,3 +427,4 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 });
+
