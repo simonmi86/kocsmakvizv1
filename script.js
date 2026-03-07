@@ -46,7 +46,7 @@ async function firestoreCountAttempts(name) {
 
 // ========== Firestore: eredmény mentése (COMPAT) ==========
 async function firestoreAddResult(name, score, total) {
-  console.log("[AddResult] start", { name, score, total });
+  console.log("[AddResult] ", { name, score, total });
   try {
     await db.collection("leaderboard").add({
       name: name,                 // egységesítéshez használhatsz: String(name).trim().toLowerCase()
@@ -101,22 +101,22 @@ function pickRandomFromBank() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  // ... itt jönnek a DOM elemek lekérései (startBtn, playerName, stb.) ...
+  // ... itt jönnek a DOM elemek lekérései (Btn, playerName, stb.) ...
 
-  // --- Start gomb átmeneti letiltása, amíg a kérdések betöltődnek ---
-  const originalStartLabel = startBtn.textContent;
-  startBtn.disabled = true;
-  startBtn.textContent = "Betöltés…";
+  // ---  gomb átmeneti letiltása, amíg a kérdések betöltődnek ---
+  const originalLabel = Btn.textContent;
+  Btn.disabled = true;
+  Btn.textContent = "Betöltés…";
 
   loadQuestions()
     .then(() => {
-      // siker: Start gomb engedélyezése
-      startBtn.disabled = false;
-      startBtn.textContent = originalStartLabel;
+      // siker:  gomb engedélyezése
+      Btn.disabled = false;
+      Btn.textContent = originalLabel;
     })
     .catch(err => {
       console.error("[Questions] Betöltési hiba:", err);
-      startBtn.textContent = "Hiba a betöltésnél";
+      Btn.textContent = "Hiba a betöltésnél";
       alert("Nem sikerült betölteni a kérdéseket (questions.json). Kérlek frissítsd az oldalt.");
       // ha szeretnéd, itt is visszaengedheted, de alapértelmezetten tiltva hagyjuk
     });
@@ -160,7 +160,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const quizScreen   = document.getElementById("quizScreen");
   const resultScreen = document.getElementById("resultScreen");
 
-  const startBtn     = document.getElementById("startBtn");
+  const Btn     = document.getElementById("Btn");
   const playerName   = document.getElementById("playerName");
   const clearBoardBtn= document.getElementById("clearBoardBtn");
   const backBtn      = document.getElementById("backBtn");
@@ -182,7 +182,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Timer
   let t0 = 0, rafId = null;
-  function startTimer() {
+  function Timer() {
     cancelAnimationFrame(rafId);
     t0 = performance.now();
     const tick = (now) => {
@@ -236,8 +236,8 @@ document.addEventListener("DOMContentLoaded", () => {
     board.sort((a,b)=> (b.score - a.score) || a.name.localeCompare(b.name));
     tableBody.innerHTML = board.map((e, i) => {
       const d = e.playedAt ? new Date(e.playedAt) : new Date();
-      const dt = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} `
-               + `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+      const dt = `${d.getFullYear()}-${String(d.getMonth()+1).pad(2,'0')}-${String(d.getDate()).pad(2,'0')} `
+               + `${String(d.getHours()).pad(2,'0')}:${String(d.getMinutes()).pad(2,'0')}`;
       return `<tr>
         <td>${i+1}</td>
         <td>${e.name}</td>
@@ -273,9 +273,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const toDate = (p) => (p?.toDate ? p.toDate() : new Date(p || Date.now()));
       const fmt = (d) => {
-        const Y=d.getFullYear(), M=String(d.getMonth()+1).padStart(2,'0'),
-              D=String(d.getDate()).padStart(2,'0'), h=String(d.getHours()).padStart(2,'0'),
-              m=String(d.getMinutes()).padStart(2,'0');
+        const Y=d.getFullYear(), M=String(d.getMonth()+1).pad(2,'0'),
+              D=String(d.getDate()).pad(2,'0'), h=String(d.getHours()).pad(2,'0'),
+              m=String(d.getMinutes()).pad(2,'0');
         return `${Y}-${M}-${D} ${h}:${m}`;
       };
 
@@ -309,25 +309,36 @@ document.addEventListener("DOMContentLoaded", () => {
       alert("Ezzel a névvel elérted az 5 próbálkozás limitet. Töröld az eredménytáblát az új próbálkozáshoz.");
       return;
     }
+// Kvíz indul
+player = name;
+score = 0;
+current = 0;
 
-    // Kvíz indul
-    player = name;
-    score = 0;
-    current = 0;
- //   questions = pickRandom10();
+// Végső ellenőrzés: ha mégis üres lenne a bank, próbáljuk még egyszer betölteni
+if (!bank.length) {
+  try { await loadQuestions(); } catch(e) {}
+}
 
-    if (qTotal) qTotal.textContent = TOTAL;
-    if (scoreView) scoreView.textContent = score;
+// A menet kérdései a JSON bankból
+questions = pickRandomFromBank();
 
-    const high = Number(localStorage.getItem(HS_KEY) || 0);
-    if (highView) highView.textContent = high;
+// HUD-on a teljes kérdésszámot a tényleges menet-hosszra állítsd
+const totalThisRun = Array.isArray(questions) ? questions.length : 0;
+if (qTotal) qTotal.textContent = totalThisRun;
 
-    nameScreen.style.display   = "none";
-    adminScreen.style.display  = "none";
-    resultScreen.style.display = "none";
-    quizScreen.style.display   = "block";
+// Ha nincs egyetlen kérdés sem, jelezzünk és ne indítsuk el
+if (totalThisRun === 0) {
+  alert("Nem sikerült kérdéseket betölteni. Kérlek frissítsd az oldalt.");
+  return;
+}
 
-    showQuestion();
+nameScreen.style.display   = "none";
+adminScreen.style.display  = "none";
+resultScreen.style.display = "none";
+quizScreen.style.display   = "block";
+
+showQuestion();
+    
   });
 
   // ======= Admin gombok =======
@@ -350,6 +361,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ======= Kérdés / válasz kezelése =======
   function showQuestion() {
+    
+
+  // Védőkorlát: ha bármilyen okból nincs érvényes kérdés, zárjuk le szépen
+  if (!Array.isArray(questions) || current < 0 || current >= questions.length) {
+    console.warn("[showQuestion] Nincs érvényes kérdés ezen az indexen", { current, len: questions?.length ?? -1 });
+    endGame(player, score, questions?.length ?? 0);
+    return;
+  }
+
     const q = questions[current];
 
     if (qNum) qNum.textContent = (current + 1).toString();
@@ -383,16 +403,20 @@ document.addEventListener("DOMContentLoaded", () => {
     startTimer();
   }
 
-  function nextQuestion() {
-    stopTimer();
-    current++;
-    if (current < questions.length) {
-      showQuestion();
-    } else {
-      console.log("[NextQuestion] Vége – endGame() hívás következik, args:", { player, score, total: questions.length });
-      endGame(player, score, questions.length); // PARAMÉTERREL hívjuk
-    }
+ function nextQuestion() {
+  stopTimer();
+  current++;
+
+  // Védőkorlát: ha nincs tömb, vagy túlfutnánk → játék vége
+  if (!Array.isArray(questions)) questions = [];
+  if (current >= questions.length) {
+    console.log("[NextQuestion] Vége – elértük a kérdések végét", { current, len: questions.length });
+    endGame(player, score, questions.length);
+    return;
   }
+
+  showQuestion();
+}
 
   // --- Játék vége: mentés + UI frissítés (PARAMÉTERES) ---
   async function endGame(playerName, finalScore, totalQuestions) {
@@ -427,6 +451,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 });
+
 
 
 
