@@ -109,6 +109,58 @@ async function endGame(playerName, finalScore, totalQuestions) {
   }
 }
 
+async function showAdminScreen() {
+  // UI váltás
+  nameScreen.style.display   = "none";
+  quizScreen.style.display   = "none";
+  resultScreen.style.display = "none";
+  adminScreen.style.display  = "block";
+
+  // <tbody> lekérése
+  const tableBody = document.getElementById("leaderTableBody");
+  if (!tableBody) {
+    console.warn("[Admin] Nincs #leaderTableBody a DOM-ban.");
+    return;
+  }
+
+  // ideiglenes állapot
+  tableBody.innerHTML = `<tr><td colspan="5" style="opacity:.8">Betöltés…</td></tr>`;
+
+  try {
+    const rows = await firestoreLoadLeaderboard(); // ← Firestore-ból jönnek a sorok
+
+    if (!rows.length) {
+      tableBody.innerHTML = `<tr><td colspan="5" style="opacity:.8">Nincs még tárolt eredmény.</td></tr>`;
+      return;
+    }
+
+    // Timestamp/Date biztonságos formázása
+    const toDate = (p) => (p?.toDate ? p.toDate() : new Date(p || Date.now()));
+    const fmt = (d) => {
+      const Y=d.getFullYear(), M=String(d.getMonth()+1).padStart(2,'0'),
+            D=String(d.getDate()).padStart(2,'0'), h=String(d.getHours()).padStart(2,'0'),
+            m=String(d.getMinutes()).padStart(2,'0');
+      return `${Y}-${M}-${D} ${h}:${m}`;
+    };
+
+    // táblázat kirajzolása
+    tableBody.innerHTML = rows.map((e, i) => {
+      const d = toDate(e.playedAt);
+      return `<tr>
+        <td>${i+1}</td>
+        <td>${e.name}</td>
+        <td>${e.score}</td>
+        <td>${e.total}</td>
+        <td>${fmt(d)}</td>
+      </tr>`;
+    }).join("");
+  } catch (e) {
+    console.error("[Admin] betöltési hiba:", e);
+    tableBody.innerHTML = `<tr><td colspan="5" style="opacity:.8">Hiba történt a betöltés közben.</td></tr>`;
+  }
+}
+``
+
 document.addEventListener("DOMContentLoaded", () => {
   // ======= Kérdésbank (18 kérdés) =======
   const allQuestions = [
@@ -310,13 +362,22 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // ======= Admin gombok =======
-  clearBoardBtn?.addEventListener("click", () => {
-    if (confirm("Biztosan törlöd az összes eredményt?")) {
-      saveBoard([]);
-      renderBoard();
-      alert("Eredménytábla törölve.");
-    }
-  });
+  clearBoardBtn?.addEventListener("click", async () => {
+  if (!confirm("Biztosan törlöd az összes eredményt?")) return;
+
+  try {
+    // 1) Törlés a Firestore-ból
+    await firestoreClearLeaderboard();
+
+    // 2) Admin tábla újratöltése Firestore-ból
+    await showAdminScreen();
+
+    alert("Eredménytábla törölve.");
+  } catch (e) {
+    console.error("[Admin] törlés hiba:", e);
+    alert("Hiba történt a törlés közben.");
+  }
+});
   backBtn?.addEventListener("click", () => {
     adminScreen.style.display = "none";
     nameScreen.style.display  = "block";
@@ -368,6 +429,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 });
+
 
 
 
