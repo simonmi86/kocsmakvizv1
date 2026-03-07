@@ -150,7 +150,7 @@ document.addEventListener("DOMContentLoaded", () => {
   ];
 
   // ======= Konstansok =======
-  const TOTAL   = 10;
+  // const TOTAL   = 10;
   const LIMIT_MS = 15000; // 15 mp/kérdés
   let current = 0;        // jelenlegi kérdés index
 
@@ -427,4 +427,5 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 });
+
 
