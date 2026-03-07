@@ -271,13 +271,16 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      const toDate = (p) => (p?.toDate ? p.toDate() : new Date(p || Date.now()));
-      const fmt = (d) => {
-        const Y=d.getFullYear(), M=String(d.getMonth()+1).pad(2,'0'),
-              D=String(d.getDate()).pad(2,'0'), h=String(d.getHours()).pad(2,'0'),
-              m=String(d.getMinutes()).pad(2,'0');
-        return `${Y}-${M}-${D} ${h}:${m}`;
-      };
+     // Timestamp/Date biztonságos formázása
+const toDate = (p) => (p?.toDate ? p.toDate() : new Date(p || Date.now()));
+const fmt = (d) => {
+  const Y = d.getFullYear();
+  const M = String(d.getMonth() + 1).padStart(2, '0');
+  const D = String(d.getDate()).padStart(2, '0');
+  const h = String(d.getHours()).padStart(2, '0');
+  const m = String(d.getMinutes()).padStart(2, '0');
+  return `${Y}-${M}-${D} ${h}:${m}`;
+};
 
       tableBody.innerHTML = rows.map((e, i) => {
         const d = toDate(e.playedAt);
@@ -451,6 +454,7 @@ showQuestion();
     }
   }
 });
+
 
 
 
