@@ -124,11 +124,11 @@
     "a": ["14","24","18","22"],
     "correct": 0,
     "explain": "Egy helyszínen, minden italból csak egy számít."
-  }
+  },
    {
     "q": "Hány pontot ér a vodka szóda hoszúlépés kombó, ha a bor dupláz?",
     "a": ["18","26","28","20"],
     "correct": 0,
     "explain": "Egy nagy rövid és dupla kis hosszú összege."
-  },
+  }
 ]
