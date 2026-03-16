@@ -2,101 +2,121 @@
   {
     "q": "Melyik utca szerepelt a legtöbbször eddig?",
     "a": ["Kazinczy u.","Erzsébet körút","Kertész u.","Wesselényi u."],
-    "correct": 1
+    "correct": 1,
+    "explain": "Az Erzsébet körút szerepel a legtöbbször; több ikonikus állomásotok is ott van (pl. Krúdy Söröző, 4-es 6-os Corvin/Király, Blokk bár, Andersen bár, Guri serház, Gong Cafe, Habakuk, Limit, Centrum stb.)."
   },
   {
     "q": "Melyik évben volt a legtöbb kocsma látogatásunk?",
     "a": ["2018","2019","2023","2024"],
-    "correct": 2
+    "correct": 2,
+    "explain": "A teljes időszakot nézve 2023 a csúcsév: ebben az évben volt a legtöbb bejegyzés."
   },
   {
     "q": "Melyik hónap volt a legerősebb?",
     "a": ["Április","Július","Október","November"],
-    "correct": 2
+    "correct": 2,
+    "explain": "Hónapszinten az október vezet – ekkor koncentrálódik a legtöbb kör és helylátogatás."
   },
   {
     "q": "Melyik helyet látogattuk a legtöbbször?",
     "a": ["Főbejárat","Krúdy","57-es italbolt","Bakegér"],
-    "correct": 1
+    "correct": 1,
+    "explain": "A felsorolt opciók közül a Krúdy Söröző fordul elő legtöbbször; mögötte a Főbejárat és az 57-es italbolt, majd a Bakegér következik."
   },
   {
     "q": "Melyik évben volt a legtöbb olyan utca ahol két helyszínen is voltunk?",
     "a": ["2018","2019","2023","2024"],
-    "correct": 2
+    "correct": 0,
+    "explain": "A vizsgált évek közül 2018-ban fordult elő a legtöbb olyan utca, ahol ugyanazon a napon két külön helyet is érintettetek; 2019 és 2023 is erős volt, 2024-ben valamivel kevesebb ilyen eset volt."
   },
   {
     "q": "Melyik utca volt az elmúlt 10 évben folyamatosan?",
     "a": ["Klauzál","Erzsébet körút","Dob","Tompa"],
-    "correct": 1
+    "correct": 1,
+    "explain": "Az Erzsébet körút több, egymást követő évben is megjelenik; a felsoroltak közül itt a legstabilabb a jelenlét."
   },
   {
     "q": "Melyik kerület dominál?",
     "a": ["6.","7.","8.","9."],
-    "correct": 1
+    "correct": 1,
+    "explain": "A VII. kerület utcái kiugróan sok bejegyzést kaptak (Erzsébet körút, Wesselényi, Dob, Kazinczy, Kertész, Akácfa, Klauzál, Dohány stb.)."
   },
   {
     "q": "Melyik a kocsma háromszög?",
     "a": ["Király–Kazinczy–Dob","Ráday–Mester–Tompa","Nagymező–Paulay–Andrássy","Üllői–Lónyay–Bakáts"],
-    "correct": 0
+    "correct": 0,
+    "explain": "A bulinegyed közepe hagyományosan a Király–Kazinczy–Dob háromszög; több állomásotok is ezekre az utcákra esik."
   },
   {
     "q": "Hány év telt el az első kocsmaraton óta?",
     "a": ["8","10","12","13"],
-    "correct": 3
+    "correct": 3,
+    "explain": "Az első bejegyzéstől az utolsóig 13 év telt el – éves bontásban számolva ez adja a helyes választ."
   },
   {
     "q": "Melyik utca szerepelt 7-szer is?",
     "a": ["Klauzál","Wesselényi","Kazinczy","Ráday"],
-    "correct": 1
+    "correct": 1,
+    "explain": "A Wesselényi utca az egyik leggyakoribb: több különböző hely is ehhez az utcához köthető (Kárpit, Comics, Funky Floor, Végállomás stb.)."
   },
   {
     "q": "Melyik évben volt a legkevesebb látogatás 2013 után?",
     "a": ["2015","2017","2021","2024"],
-    "correct": 2
+    "correct": 2,
+    "explain": "2013 után a legalacsonyabb aktivitás 2021-ben volt; a többi felsorolt évben több bejegyzés született."
   },
   {
     "q": "Melyik utcában van a legtöbb hely ahol jártunk?",
     "a": ["József körút","Erzsébet körút","Wesselényi","Akácfa"],
-    "correct": 1
+    "correct": 1,
+    "explain": "Az egyedi helyek száma az Erzsébet körúton a legmagasabb; József körúton, Wesselényin és Akácfán ennél kevesebb külön hely szerepel."
   },
   {
     "q": "Melyik hónap teljesen üres?",
     "a": ["Április","Október","Június","December"],
-    "correct": 3
+    "correct": 3,
+    "explain": "Decemberben nincs bejegyzés; a többi felsorolt hónapban több alkalom is szerepel."
   },
   {
     "q": "Mikor tértél vissza a Nagytemplom utcára?",
     "a": ["2020","2021","2022","2023"],
-    "correct": 1
+    "correct": 1,
+    "explain": "A Nagytemplom utcához tartozó következő bejegyzés a korábbi után 2021-ben jelenik meg újra."
   },
   {
     "q": "Mikor jelent meg először Bakáts környéke?",
     "a": ["2018","2019","2022","2024"],
-    "correct": 2
+    "correct": 2,
+    "explain": "A Bakáts környéki első bejegyzés 2022-ből származik; innen indul a későbbi jelenlét is."
   },
   {
     "q": "Hányszor szerepel a Lónyay utca?",
     "a": ["1","2","3","4"],
-    "correct": 1
+    "correct": 1,
+    "explain": "Kétszer: két külön helyhez köthető bejegyzés áll rendelkezésre ugyanerről az utcáról."
   },
   {
     "q": "Mi NEM szerepelt 2013-ban?",
     "a": ["Hunyadi tér","Rákóczi","Kazinczy","Ráday"],
-    "correct": 3
+    "correct": 3,
+    "explain": "2013-ban a Hunyadi tér, a Rákóczi út és a Kazinczy utca már jelen van, a Ráday utca viszont későbbről indul."
   },
-   {
+  {
     "q": "Hány különböző nyertes neve szerepel a vándorserlegen?",
     "a": ["8","13","16","10"],
-    "correct": 1
+    "correct": 1,
+    "explain": "A vándorserleg feliratai alapján 13 különböző név szerepel rajta."
   },
   {
     "q": "Hány női részt vevő nyert már?",
     "a": ["0","3","5","1"],
-    "correct": 1
+    "correct": 1,
+    "explain": "A belső eredménylista szerint eddig három női győztes neve szerepel."
   },
   {
     "q": "Melyik évben volt a legtöbb új hely?",
     "a": ["2022","2023","2024","2025"],
-    "correct": 2
+    "correct": 0,
+    "explain": "Az új helyek száma 2022-ben volt a legmagasabb; 2023 és 2024 is erős évek, 2025-ben már mérsékeltebb a bővülés."
   }
 ]
