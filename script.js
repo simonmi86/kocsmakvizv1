@@ -322,8 +322,8 @@ document.addEventListener("DOMContentLoaded", () => {
     // limit: max 5 próbálkozás / név
     try {
       const attempts = await firestoreCountAttempts(name);
-      if (attempts >= 5) {
-        alert("Ezzel a névvel elérted az 5 próbálkozás limitet. Próbálj másik nevet, vagy ürítsd az eredménytáblát admin módban.");
+      if (attempts >= 3) {
+        alert("Ezzel a névvel elérted a 3 próbálkozás limitet. Várj az ereményhírdeésig.");
         return;
       }
     } catch (e) {
