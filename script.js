@@ -212,45 +212,45 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // kattintáskezelés
     answersEl.querySelectorAll(".answerBtn").forEach(btn => {
-      btn.addEventListener("click", (e) => {
-        stopTimer();
-        const chosen = Number(e.currentTarget.dataset.id);
+  btn.addEventListener("click", (e) => {
+    stopTimer();
+    const chosen = Number(e.currentTarget.dataset.id);
 
-        // jelölés
-        answersEl.querySelectorAll(".answerBtn").forEach((b, i) => {
-          b.disabled = true;
-          if (i === q.correct) b.classList.add("correct");
-         // if (i === chosen && i !== q.correct) b.classList.add("wrong");
-        });
+    // minden gomb letiltása
+    answersEl.querySelectorAll(".answerBtn").forEach(b => { b.disabled = true; });
 
-        const isCorrect = (chosen === q.correct);
-        if (isCorrect) {
-          state.score++;
-          scoreView.textContent = String(state.score);
+    const isCorrect = (chosen === q.correct);
 
-          // Ha van indoklás → megjelenítjük 3 mp-ig
-          if (q.explain && q.explain.trim()) {
-            explainBox.textContent = q.explain.trim();
-            explainBox.style.display = "block";
-            setTimeout(nextQuestion, 3000);
-            return; // ne fusson le alul a gyors tovább
-          }
-        }
+    // csak a kiválasztott gombot jelöljük
+    const chosenBtn = answersEl.querySelector(`.answerBtn[data-id="${chosen}"]`);
+    if (chosenBtn) {
+      chosenBtn.classList.add(isCorrect ? "correct" : "wrong");
+    }
 
-        // ha nincs indoklás (vagy rossz) → gyorsabb tovább
-        setTimeout(nextQuestion, 600);
-      }, { passive: true });
-    });
+    if (isCorrect) {
+      state.score++;
+      scoreView.textContent = String(state.score);
+
+      // Ha van indoklás → megjelenítjük 3 mp-ig
+      if (q.explain && q.explain.trim()) {
+        explainBox.textContent = q.explain.trim();
+        explainBox.style.display = "block";
+        setTimeout(nextQuestion, 3000);
+        return;
+      }
+    }
+
+    // rossz válasz (vagy nincs indoklás): rövid várakozás, majd tovább
+    setTimeout(nextQuestion, 600);
+  }, { passive: true });
+});
 
     // timer indul
     startTimer(() => {
-      // idő lejárt → automatikus továbblépés
-      answersEl.querySelectorAll(".answerBtn").forEach((b, i) => {
-        b.disabled = true;
-        if (i === q.correct) b.classList.add("correct");
-      });
-      setTimeout(nextQuestion, 600);
-    });
+  answersEl.querySelectorAll(".answerBtn").forEach(b => { b.disabled = true; });
+  setTimeout(nextQuestion, 600);
+});
+
   }
 
   function nextQuestion() {
