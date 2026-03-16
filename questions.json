@@ -9,19 +9,19 @@
     "q": "Melyik évben volt a legtöbb kocsma látogatásunk?",
     "a": ["2018","2019","2023","2024"],
     "correct": 2,
-    "explain": "A teljes időszakot nézve 2023 a csúcsév: ebben az évben volt a legtöbb bejegyzés."
+    "explain": "A teljes időszakot nézve 2023 a csúcsév: ebben az évben volt a legtöbb bejegyzés, 16."
   },
   {
     "q": "Melyik hónap volt a legerősebb?",
     "a": ["Április","Július","Október","November"],
     "correct": 2,
-    "explain": "Hónapszinten az október vezet – ekkor koncentrálódik a legtöbb kör és helylátogatás."
+    "explain": "Hónapszinten az október vezet – ekkor koncentrálódik a legtöbb kör és helylátogatás, 63."
   },
   {
     "q": "Melyik helyet látogattuk a legtöbbször?",
     "a": ["Főbejárat","Krúdy","57-es italbolt","Bakegér"],
     "correct": 1,
-    "explain": "A felsorolt opciók közül a Krúdy Söröző fordul elő legtöbbször; mögötte a Főbejárat és az 57-es italbolt, majd a Bakegér következik."
+    "explain": "A felsorolt opciók közül a Krúdy Söröző fordul elő legtöbbször, 6-szor; mögötte a Főbejárat és az 57-es italbolt, majd a Bakegér következik."
   },
   {
     "q": "Melyik évben volt a legtöbb olyan utca ahol két helyszínen is voltunk?",
@@ -51,13 +51,13 @@
     "q": "Hány év telt el az első kocsmaraton óta?",
     "a": ["8","10","12","13"],
     "correct": 3,
-    "explain": "Az első bejegyzéstől az utolsóig 13 év telt el – éves bontásban számolva ez adja a helyes választ."
+    "explain": "Az első bejegyzéstől az utolsóig 13 év telt el."
   },
   {
     "q": "Melyik utca szerepelt 7-szer is?",
     "a": ["Klauzál","Wesselényi","Kazinczy","Ráday"],
     "correct": 1,
-    "explain": "A Wesselényi utca az egyik leggyakoribb: több különböző hely is ehhez az utcához köthető (Kárpit, Comics, Funky Floor, Végállomás stb.)."
+    "explain": "A Wesselényi utca az egyik leggyakoribb: több különböző hely is ehhez az utcához köthető (Kárpit, Comics bár, Funky Floor, Végállomás stb.)."
   },
   {
     "q": "Melyik évben volt a legkevesebb látogatás 2013 után?",
@@ -81,7 +81,7 @@
     "q": "Mikor tértél vissza a Nagytemplom utcára?",
     "a": ["2020","2021","2022","2023"],
     "correct": 1,
-    "explain": "A Nagytemplom utcához tartozó következő bejegyzés a korábbi után 2021-ben jelenik meg újra."
+    "explain": "A Nagytemplom utca, 2021-ben jelenik meg újra."
   },
   {
     "q": "Mikor jelent meg először Bakáts környéke?",
@@ -111,12 +111,24 @@
     "q": "Hány női részt vevő nyert már?",
     "a": ["0","3","5","1"],
     "correct": 1,
-    "explain": "A belső eredménylista szerint eddig három női győztes neve szerepel."
+    "explain": "Az eredménylista szerint eddig három női győztes neve szerepel."
   },
   {
     "q": "Melyik évben volt a legtöbb új hely?",
     "a": ["2022","2023","2024","2025"],
     "correct": 0,
     "explain": "Az új helyek száma 2022-ben volt a legmagasabb; 2023 és 2024 is erős évek, 2025-ben már mérsékeltebb a bővülés."
+  },
+    {
+    "q": "Hány pontot ér két whiskey kóla és egy pohár sör?",
+    "a": ["14","24","18","22"],
+    "correct": 0,
+    "explain": "Egy helyszínen, minden italból csak egy számít."
   }
+   {
+    "q": "Hány pontot ér a vodka szóda hoszúlépés kombó, ha a bor dupláz?",
+    "a": ["18","26","28","20"],
+    "correct": 0,
+    "explain": "Egy nagy rövid és dupla kis hosszú összege."
+  },
 ]
