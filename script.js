@@ -220,7 +220,7 @@ document.addEventListener("DOMContentLoaded", () => {
         answersEl.querySelectorAll(".answerBtn").forEach((b, i) => {
           b.disabled = true;
           if (i === q.correct) b.classList.add("correct");
-          if (i === chosen && i !== q.correct) b.classList.add("wrong");
+         // if (i === chosen && i !== q.correct) b.classList.add("wrong");
         });
 
         const isCorrect = (chosen === q.correct);
