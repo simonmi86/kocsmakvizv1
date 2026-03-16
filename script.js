@@ -1,461 +1,362 @@
-// ===== Globális állapot =====
-let player = "";
-let score = 0;
-let questions = [];
-const HS_KEY = "kocsmakviz_highscore"; // eszköz-rekord kulcs
-
-// ========== Firestore: leaderboard lekérdezés (COMPAT) ==========
-async function firestoreLoadLeaderboard() {
-  try {
-    let queryRef = db.collection("leaderboard").orderBy("score", "desc");
-    // queryRef = queryRef.orderBy("playedAt", "desc"); // ha kell másodlagos rendezés + index
-    const snap = await queryRef.get();
-
-    const rows = [];
-    snap.forEach(doc => {
-      const d = doc.data() || {};
-      rows.push({
-        name: d.name ?? "",
-        score: Number(d.score) || 0,
-        total: Number(d.total) || 0,
-        playedAt: d.playedAt ?? null // lehet Date vagy Timestamp; megjelenítéskor formázd
-      });
-    });
-    return rows;
-  } catch (err) {
-    console.error("[LoadLeaderboard] Firestore hiba:", err);
-    return [];
-  }
-}
-
-// ========== Firestore: próbálkozások számolása (COMPAT) ==========
-async function firestoreCountAttempts(name) {
-  if (!name || !name.trim()) return 0;
-  const normalized = name.trim(); // vagy .toLowerCase()
-  try {
-    const snap = await db
-      .collection("leaderboard")
-      .where("name", "==", normalized)
-      .get();
-    return snap.size;
-  } catch (err) {
-    console.error("[CountAttempts] Firestore hiba:", err);
-    return 0;
-  }
-}
-
-// ========== Firestore: eredmény mentése (COMPAT) ==========
-async function firestoreAddResult(name, score, total) {
-  console.log("[AddResult] ", { name, score, total });
-  try {
-    await db.collection("leaderboard").add({
-      name: name,                 // egységesítéshez használhatsz: String(name).trim().toLowerCase()
-      score: Number(score) || 0,
-      total: Number(total) || 0,
-      playedAt: new Date()
-    });
-    console.log("[AddResult] success");
-  } catch (err) {
-    console.error("[AddResult] error", err);
-  }
-}
-
-// ========== Firestore: leaderboard törlése (COMPAT) ==========
-async function firestoreClearLeaderboard() {
-  try {
-    const snap = await db.collection("leaderboard").get();
-    const deletions = [];
-    snap.forEach(doc => deletions.push(doc.ref.delete()));
-    await Promise.all(deletions);
-  } catch (err) {
-    console.error("[ClearLeaderboard] Firestore hiba:", err);
-  }
-}
+/* script.js – Kocsmakvíz (helyes válasznál 3 mp-es indoklás) */
 
 document.addEventListener("DOMContentLoaded", () => {
+  // ---------- Beállítások ----------
+  const TOTAL_QUESTIONS = 10;
+  const LIMIT_MS = 15_000; // 15 mp/kérdés
+  const HS_KEY = "kocsmakviz_highscore";
+  const LS_BOARD_KEY = "kocsmakviz_leaderboard_v1";
+  const HAS_DB = typeof window !== "undefined" && window.db && typeof window.db.collection === "function";
 
-// ---- Kérdésbank betöltése JSON-ból ----
-let bank = [];        // a teljes kérdésbank (JSON)
-const TOTAL = 10;     // menetenként ennyi kérdés
-
-async function loadQuestions() {
-  // cache-bust: GitHub Pages-n ne kapj régi fájlt
-  const res = await fetch(`questions.json?v=${Date.now()}`);
-  if (!res.ok) throw new Error(`questions.json letöltési hiba: ${res.status}`);
-  const data = await res.json();
-
-  // alapszintű validáció
-  if (!Array.isArray(data) || data.length < TOTAL) {
-    console.warn("[Questions] Kevés kérdés vagy hibás formátum a questions.json-ben.");
-  }
-  bank = data;
-}
-
-// Véletlen sorrendből kivágunk TOTAL darabot
-function pickRandomFromBank() {
-  return bank
-    .map(v => [Math.random(), v])
-    .sort((a,b) => a[0]-b[0])
-    .map(x => x[1])
-    .slice(0, TOTAL);
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-  // ... itt jönnek a DOM elemek lekérései (Btn, playerName, stb.) ...
-
-  // ---  gomb átmeneti letiltása, amíg a kérdések betöltődnek ---
-  const originalLabel = Btn.textContent;
-  Btn.disabled = true;
-  Btn.textContent = "Betöltés…";
-
-  loadQuestions()
-    .then(() => {
-      // siker:  gomb engedélyezése
-      Btn.disabled = false;
-      Btn.textContent = originalLabel;
-    })
-    .catch(err => {
-      console.error("[Questions] Betöltési hiba:", err);
-      Btn.textContent = "Hiba a betöltésnél";
-      alert("Nem sikerült betölteni a kérdéseket (questions.json). Kérlek frissítsd az oldalt.");
-      // ha szeretnéd, itt is visszaengedheted, de alapértelmezetten tiltva hagyjuk
-    });
-
-  // ... itt mehet tovább a kódod (gomb listenerek, stb.) ...
-});
-  
-
-
-  
-  // ======= Kérdésbank (18 kérdés) =======
- /* const allQuestions = [
-    {q:"Melyik utca szerepelt a legtöbbször?",a:["Kazinczy u.","Erzsébet körút","Kertész u.","Wesselényi u."],correct:1},
-    {q:"Melyik évben volt a legtöbb látogatásod?",a:["2018","2019","2023","2024"],correct:2},
-    {q:"Melyik hónap volt a legerősebb?",a:["Április","Július","Október","November"],correct:2},
-    {q:"Melyik helyet látogattad a legtöbbször?",a:["Főbejárat","Krúdy","57-es italbolt","Bakegér"],correct:1},
-    {q:"Melyik évben volt a legtöbb aktív utca?",a:["2018","2019","2023","2024"],correct:2},
-    {q:"Melyik utca volt aktív 10 évben?",a:["Klauzál","Erzsébet körút","Dob","Tompa"],correct:1},
-    {q:"Melyik kerület dominál?",a:["6.","7.","8.","9."],correct:1},
-    {q:"Melyik a kocsma háromszög?",a:["Király–Kazinczy–Dob","Ráday–Mester–Tompa","Nagymező–Paulay–Andrássy","Üllői–Lónyay–Bakáts"],correct:0},
-    {q:"Hány év telt el 2013–2026 között?",a:["8","10","12","13"],correct:3},
-    {q:"Melyik utca 7 évben is szerepel?",a:["Klauzál","Wesselényi","Kazinczy","Ráday"],correct:1},
-    {q:"Melyik évben volt a legkevesebb látogatás 2013 után?",a:["2015","2017","2021","2024"],correct:2},
-    {q:"Melyik utcában van a legtöbb hely?",a:["József körút","Erzsébet körút","Wesselényi","Akácfa"],correct:1},
-    {q:"Melyik hónap teljesen üres?",a:["Április","Október","Június","December"],correct:3},
-    {q:"Mikor tértél vissza a Nagytemplom utcára?",a:["2020","2021","2022","2023"],correct:1},
-    {q:"Mikor jelent meg először Bakáts környéke?",a:["2018","2019","2022","2024"],correct:2},
-    {q:"Hányszor szerepel a Lónyay utca?",a:["1","2","3","4"],correct:1},
-    {q:"Mi NEM szerepelt 2013-ban?",a:["Hunyadi tér","Rákóczi","Kazinczy","Ráday"],correct:3},
-    {q:"Melyik évben volt a legtöbb új hely?",a:["2022","2023","2024","2025"],correct:2}
-  ];*/
-
-  // ======= Konstansok =======
-  // const TOTAL   = 10;
-  const LIMIT_MS = 15000; // 15 mp/kérdés
-  let current = 0;        // jelenlegi kérdés index
-
-  // ======= DOM =======
+  // ---------- DOM ----------
   const nameScreen   = document.getElementById("nameScreen");
   const adminScreen  = document.getElementById("adminScreen");
   const quizScreen   = document.getElementById("quizScreen");
   const resultScreen = document.getElementById("resultScreen");
 
-  const Btn     = document.getElementById("Btn");
-  const playerName   = document.getElementById("playerName");
+  const startBtn     = document.getElementById("startBtn");
+  const playerNameEl = document.getElementById("playerName");
+
   const clearBoardBtn= document.getElementById("clearBoardBtn");
   const backBtn      = document.getElementById("backBtn");
 
-  const qNum      = document.getElementById("qNum");
-  const qTotal    = document.getElementById("qTotal");
-  const scoreView = document.getElementById("scoreView");
-  const highView  = document.getElementById("highView");
+  const qNumEl       = document.getElementById("qNum");
+  const qTotalEl     = document.getElementById("qTotal");
+  const scoreView    = document.getElementById("scoreView");
+  const highView     = document.getElementById("highView");
 
-  const timerBar  = document.getElementById("timerBar");
-  const questionEl= document.getElementById("question");
-  const answersEl = document.getElementById("answers");
-  const resultText= document.getElementById("resultText");
-  // const tableBody = document.getElementById("leaderTableBody"); // showAdminScreen / renderBoard helyben kérdezi le
+  const timerBar     = document.getElementById("timerBar");
+  const questionEl   = document.getElementById("question");
+  const explainBox   = document.getElementById("explainBox");
+  const answersEl    = document.getElementById("answers");
+  const resultText   = document.getElementById("resultText");
+  const leaderBody   = document.getElementById("leaderTableBody");
 
-  // ======= Segédfüggvények =======
-  const shuffle = arr => arr.map(v => [Math.random(), v]).sort((a,b) => a[0]-b[0]).map(x => x[1]);
- // const pickRandom10 = () => shuffle(allQuestions).slice(0, TOTAL);
+  // ---------- Állapot ----------
+  let state = {
+    player: "",
+    score: 0,
+    allQuestions: [],
+    questions: [],
+    current: 0,
+    rafId: null,
+    t0: 0
+  };
 
-  // Timer
-  let t0 = 0, rafId = null;
-  function Timer() {
-    cancelAnimationFrame(rafId);
-    t0 = performance.now();
+  // ---------- Segédek ----------
+  const escapeHtml = (s) => String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+  const shuffle = (arr) => { const a = arr.slice(); for (let i=a.length-1;i>0;i--){ const j=(Math.random()*(i+1))|0; [a[i],a[j]]=[a[j],a[i]]; } return a; };
+  const show = (el) => [nameScreen, adminScreen, quizScreen, resultScreen].forEach(x => x && (x.style.display = (x===el ? "block":"none")));
+  const stopTimer = () => { if (state.rafId) cancelAnimationFrame(state.rafId); state.rafId = null; };
+  const startTimer = (onTimeout) => {
+    stopTimer(); state.t0 = performance.now();
     const tick = (now) => {
-      const left = Math.max(0, LIMIT_MS - (now - t0));
+      const left = Math.max(0, LIMIT_MS - (now - state.t0));
       timerBar.style.width = `${(left / LIMIT_MS) * 100}%`;
-      if (left <= 0) {
-        lockAnswers();
-        revealCorrect();          // idő lejárt → mutasd a helyeset
-        setTimeout(nextQuestion, 600);
-        return;
-      }
-      rafId = requestAnimationFrame(tick);
+      if (left <= 0) { onTimeout(); return; }
+      state.rafId = requestAnimationFrame(tick);
     };
-    rafId = requestAnimationFrame(tick);
-  }
-  function stopTimer() { cancelAnimationFrame(rafId); }
+    state.rafId = requestAnimationFrame(tick);
+  };
 
-  function lockAnswers() {
-    answersEl.classList.add("disabled");
-    answersEl.querySelectorAll("button").forEach(b => b.disabled = true);
+  // ---------- Adatbetöltés ----------
+  async function loadQuestionsJson() {
+    const res = await fetch(`questions.json?v=${Date.now()}`);
+    if (!res.ok) throw new Error(`questions.json betöltési hiba: ${res.status}`);
+    const data = await res.json();
+    if (!Array.isArray(data) || data.length < TOTAL_QUESTIONS) {
+      console.warn("[Questions] Kevés kérdés vagy hibás formátum.");
+    }
+    state.allQuestions = data;
   }
-  function unlockAnswers() {
-    answersEl.classList.remove("disabled");
-    answersEl.querySelectorAll("button").forEach(b => b.disabled = false);
-  }
-  function revealCorrect(chosenIdx = null) {
-    const q = questions[current];
-    answersEl.querySelectorAll("button").forEach((btn, i) => {
-      if (i === q.correct) btn.classList.add("correct");
-      else if (chosenIdx !== null && i === chosenIdx) btn.classList.add("wrong");
+
+  function pickRandomQuestions() {
+    // A JSON szerkezete: { q, a:[], correct, explain? }
+    return shuffle(state.allQuestions).slice(0, TOTAL_QUESTIONS).map((q) => {
+      const opts = q.a.map((text, idx) => ({ text, idx }));
+      const mixed = shuffle(opts);
+      const newCorrect = mixed.findIndex(o => o.idx === q.correct);
+      return {
+        q: q.q,
+        a: mixed.map(o => o.text),
+        correct: newCorrect,
+        explain: q.explain ? String(q.explain) : ""
+      };
     });
   }
 
-  // ======= Admin (kmadmin) ======= — localStorage segédek (ha offline listát is akarsz)
-  function loadBoard() {
-    try { return JSON.parse(localStorage.getItem("kocsmakviz_leaderboard_v1") || "[]"); }
+  // ---------- Ranglista (Firestore + fallback) ----------
+  async function firestoreLoadLeaderboard() {
+    if (!HAS_DB) return loadBoardLocal();
+    try {
+      const snap = await db.collection("leaderboard").orderBy("score","desc").get();
+      const rows = [];
+      snap.forEach(doc => {
+        const d = doc.data() || {};
+        rows.push({
+          name: d.name ?? "",
+          score: Number(d.score) || 0,
+          total: Number(d.total) || 0,
+          playedAt: d.playedAt ?? null
+        });
+      });
+      return rows;
+    } catch (err) {
+      console.error("[LoadLeaderboard] Firestore hiba:", err);
+      return loadBoardLocal();
+    }
+  }
+
+  async function firestoreAddResult(name, score, total) {
+    if (!HAS_DB) { saveResultLocal(name, score, total); return; }
+    try {
+      await db.collection("leaderboard").add({
+        name: String(name || "").trim(),
+        score: Number(score) || 0,
+        total: Number(total) || 0,
+        playedAt: new Date()
+      });
+    } catch (err) {
+      console.error("[AddResult] Firestore hiba:", err);
+      saveResultLocal(name, score, total);
+    }
+  }
+
+  async function firestoreCountAttempts(name) {
+    if (!HAS_DB) return countAttemptsLocal(name);
+    try {
+      const snap = await db.collection("leaderboard").where("name","==", String(name||"").trim()).get();
+      return snap.size || 0;
+    } catch (err) {
+      console.error("[CountAttempts] Firestore hiba:", err);
+      return countAttemptsLocal(name);
+    }
+  }
+
+  async function firestoreClearLeaderboard() {
+    if (!HAS_DB) { clearBoardLocal(); return; }
+    try {
+      const snap = await db.collection("leaderboard").get();
+      const batch = db.batch();
+      snap.forEach(doc => batch.delete(doc.ref));
+      await batch.commit();
+    } catch (err) {
+      console.error("[ClearLeaderboard] Firestore hiba:", err);
+    }
+  }
+
+  // --- localStorage fallbackok ---
+  function loadBoardLocal() {
+    try { return JSON.parse(localStorage.getItem(LS_BOARD_KEY) || "[]"); }
     catch { return []; }
   }
-  function saveBoard(arr) {
-    localStorage.setItem("kocsmakviz_leaderboard_v1", JSON.stringify(arr));
+  function saveBoardLocal(arr) {
+    localStorage.setItem(LS_BOARD_KEY, JSON.stringify(arr));
   }
-  function renderBoard() {
-    const tableBody = document.getElementById("leaderTableBody"); // HELYBEN kérdezzük le
-    if (!tableBody) return;
+  function saveResultLocal(name, score, total) {
+    const board = loadBoardLocal();
+    board.push({ name: String(name||"").trim(), score: Number(score)||0, total: Number(total)||0, playedAt: Date.now() });
+    board.sort((a,b) => (b.score - a.score) || (b.playedAt - a.playedAt));
+    saveBoardLocal(board.slice(0,100));
+  }
+  function countAttemptsLocal(name) {
+    const n = String(name||"").trim();
+    return loadBoardLocal().filter(x => (x.name||"") === n).length;
+  }
+  function clearBoardLocal() {
+    localStorage.removeItem(LS_BOARD_KEY);
+  }
 
-    const board = loadBoard();
-    if (!board.length) {
-      tableBody.innerHTML = `<tr><td colspan="5" style="opacity:.8">Nincs még tárolt eredmény.</td></tr>`;
+  async function renderLeaderboard() {
+    if (!leaderBody) return;
+    leaderBody.innerHTML = `<tr><td colspan="5" style="opacity:.8">Betöltés…</td></tr>`;
+    const rows = await firestoreLoadLeaderboard();
+
+    if (!rows.length) {
+      leaderBody.innerHTML = `<tr><td colspan="5" style="opacity:.8">Nincs még tárolt eredmény.</td></tr>`;
       return;
     }
-    board.sort((a,b)=> (b.score - a.score) || a.name.localeCompare(b.name));
-    tableBody.innerHTML = board.map((e, i) => {
-      const d = e.playedAt ? new Date(e.playedAt) : new Date();
-      const dt = `${d.getFullYear()}-${String(d.getMonth()+1).pad(2,'0')}-${String(d.getDate()).pad(2,'0')} `
-               + `${String(d.getHours()).pad(2,'0')}:${String(d.getMinutes()).pad(2,'0')}`;
+
+    const toDate = (p) => (p?.toDate ? p.toDate() : new Date(p || Date.now()));
+    const fmt = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+
+    leaderBody.innerHTML = rows.map((e, i) => {
+      const d = toDate(e.playedAt);
       return `<tr>
         <td>${i+1}</td>
-        <td>${e.name}</td>
+        <td>${escapeHtml(e.name)}</td>
         <td>${e.score}</td>
-        <td>${e.total || TOTAL}</td>
-        <td>${dt}</td>
+        <td>${e.total}</td>
+        <td>${fmt(d)}</td>
       </tr>`;
     }).join("");
   }
 
-  // 🔥 Firestore‑os admin betöltés
-  async function showAdminScreen() {
-    // UI váltás
-    nameScreen.style.display   = "none";
-    quizScreen.style.display   = "none";
-    resultScreen.style.display = "none";
-    adminScreen.style.display  = "block";
-
-    const tableBody = document.getElementById("leaderTableBody");
-    if (!tableBody) {
-      console.warn("[Admin] Nincs #leaderTableBody a DOM-ban.");
-      return;
-    }
-
-    tableBody.innerHTML = `<tr><td colspan="5" style="opacity:.8">Betöltés…</td></tr>`;
-
-    try {
-      const rows = await firestoreLoadLeaderboard();   // Firestore-ból jönnek a sorok
-      if (!rows.length) {
-        tableBody.innerHTML = `<tr><td colspan="5" style="opacity:.8">Nincs még tárolt eredmény.</td></tr>`;
-        return;
-      }
-
-     // Timestamp/Date biztonságos formázása
-const toDate = (p) => (p?.toDate ? p.toDate() : new Date(p || Date.now()));
-const fmt = (d) => {
-  const Y = d.getFullYear();
-  const M = String(d.getMonth() + 1).padStart(2, '0');
-  const D = String(d.getDate()).padStart(2, '0');
-  const h = String(d.getHours()).padStart(2, '0');
-  const m = String(d.getMinutes()).padStart(2, '0');
-  return `${Y}-${M}-${D} ${h}:${m}`;
-};
-
-      tableBody.innerHTML = rows.map((e, i) => {
-        const d = toDate(e.playedAt);
-        return `<tr>
-          <td>${i+1}</td>
-          <td>${e.name}</td>
-          <td>${e.score}</td>
-          <td>${e.total}</td>
-          <td>${fmt(d)}</td>
-        </tr>`;
-      }).join("");
-    } catch (e) {
-      console.error("[Admin] betöltési hiba:", e);
-      tableBody.innerHTML = `<tr><td colspan="5" style="opacity:.8">Hiba történt a betöltés közben.</td></tr>`;
-    }
-  }
-
-  // ======= Start gomb =======
-  startBtn.addEventListener("click", async () => {
-    const name = (playerName.value || "").trim();
-    if (!name) { alert("Kérlek add meg a neved!"); return; }
-
-    // ADMIN mód
-    if (name === "kmadmin") { showAdminScreen(); return; }
-
-    // 5 próbálkozás limit névre – Firestore-ból
-    const attempts = await firestoreCountAttempts(name);
-    if (attempts >= 5) {
-      alert("Ezzel a névvel elérted az 5 próbálkozás limitet. Töröld az eredménytáblát az új próbálkozáshoz.");
-      return;
-    }
-// Kvíz indul
-player = name;
-score = 0;
-current = 0;
-
-// Végső ellenőrzés: ha mégis üres lenne a bank, próbáljuk még egyszer betölteni
-if (!bank.length) {
-  try { await loadQuestions(); } catch(e) {}
-}
-
-// A menet kérdései a JSON bankból
-questions = pickRandomFromBank();
-
-// HUD-on a teljes kérdésszámot a tényleges menet-hosszra állítsd
-const totalThisRun = Array.isArray(questions) ? questions.length : 0;
-if (qTotal) qTotal.textContent = totalThisRun;
-
-// Ha nincs egyetlen kérdés sem, jelezzünk és ne indítsuk el
-if (totalThisRun === 0) {
-  alert("Nem sikerült kérdéseket betölteni. Kérlek frissítsd az oldalt.");
-  return;
-}
-
-nameScreen.style.display   = "none";
-adminScreen.style.display  = "none";
-resultScreen.style.display = "none";
-quizScreen.style.display   = "block";
-
-showQuestion();
-    
-  });
-
-  // ======= Admin gombok =======
-  clearBoardBtn?.addEventListener("click", async () => {
-    if (!confirm("Biztosan törlöd az összes eredményt?")) return;
-    try {
-      await firestoreClearLeaderboard(); // Firestore kiürítése
-      await showAdminScreen();           // azonnali újratöltés Firestore-ból
-      alert("Eredménytábla törölve.");
-    } catch (e) {
-      console.error("[Admin] törlés hiba:", e);
-      alert("Hiba történt a törlés közben.");
-    }
-  });
-
-  backBtn?.addEventListener("click", () => {
-    adminScreen.style.display = "none";
-    nameScreen.style.display  = "block";
-  });
-
-  // ======= Kérdés / válasz kezelése =======
+  // ---------- Kvíz logika ----------
   function showQuestion() {
-    
+    if (!Array.isArray(state.questions) || state.current < 0 || state.current >= state.questions.length) {
+      endGame(); return;
+    }
 
-  // Védőkorlát: ha bármilyen okból nincs érvényes kérdés, zárjuk le szépen
-  if (!Array.isArray(questions) || current < 0 || current >= questions.length) {
-    console.warn("[showQuestion] Nincs érvényes kérdés ezen az indexen", { current, len: questions?.length ?? -1 });
-    endGame(player, score, questions?.length ?? 0);
-    return;
-  }
-
-    const q = questions[current];
-
-    if (qNum) qNum.textContent = (current + 1).toString();
+    const q = state.questions[state.current];
+    qNumEl.textContent = String(state.current + 1);
     questionEl.textContent = q.q;
 
-    // válaszok keverése + helyes index újraszámolása
-    const opts = q.a.map((text, idx) => ({ text, idx }));
-    const shuffled = shuffle(opts);
-    const newCorrect = shuffled.findIndex(o => o.idx === q.correct);
-    q.correct = newCorrect;
+    // indoklás doboz alaphelyzetbe
+    explainBox.style.display = "none";
+    explainBox.textContent = "";
 
-    answersEl.innerHTML = shuffled
-      .map((o,i)=> `<button class="answerBtn" data-id="${i}">${o.text}</button>`)
-      .join("");
+    answersEl.innerHTML = q.a.map((text, i) =>
+      `<button class="answerBtn" data-id="${i}">${escapeHtml(text)}</button>`
+    ).join("");
 
-    unlockAnswers();
+    // kattintáskezelés
     answersEl.querySelectorAll(".answerBtn").forEach(btn => {
       btn.addEventListener("click", (e) => {
         stopTimer();
         const chosen = Number(e.currentTarget.dataset.id);
-        lockAnswers();
-        if (chosen === q.correct) {
-          score++;
-          if (scoreView) scoreView.textContent = score;
+
+        // jelölés
+        answersEl.querySelectorAll(".answerBtn").forEach((b, i) => {
+          b.disabled = true;
+          if (i === q.correct) b.classList.add("correct");
+          if (i === chosen && i !== q.correct) b.classList.add("wrong");
+        });
+
+        const isCorrect = (chosen === q.correct);
+        if (isCorrect) {
+          state.score++;
+          scoreView.textContent = String(state.score);
+
+          // Ha van indoklás → megjelenítjük 3 mp-ig
+          if (q.explain && q.explain.trim()) {
+            explainBox.textContent = q.explain.trim();
+            explainBox.style.display = "block";
+            setTimeout(nextQuestion, 3000);
+            return; // ne fusson le alul a gyors tovább
+          }
         }
-        revealCorrect(chosen);
+
+        // ha nincs indoklás (vagy rossz) → gyorsabb tovább
         setTimeout(nextQuestion, 600);
-      }, { passive:true });
+      }, { passive: true });
     });
 
-    startTimer();
+    // timer indul
+    startTimer(() => {
+      // idő lejárt → automatikus továbblépés
+      answersEl.querySelectorAll(".answerBtn").forEach((b, i) => {
+        b.disabled = true;
+        if (i === q.correct) b.classList.add("correct");
+      });
+      setTimeout(nextQuestion, 600);
+    });
   }
 
- function nextQuestion() {
-  stopTimer();
-  current++;
-
-  // Védőkorlát: ha nincs tömb, vagy túlfutnánk → játék vége
-  if (!Array.isArray(questions)) questions = [];
-  if (current >= questions.length) {
-    console.log("[NextQuestion] Vége – elértük a kérdések végét", { current, len: questions.length });
-    endGame(player, score, questions.length);
-    return;
+  function nextQuestion() {
+    stopTimer();
+    state.current++;
+    if (state.current >= state.questions.length) { endGame(); return; }
+    showQuestion();
   }
 
-  showQuestion();
-}
+  async function endGame() {
+    stopTimer();
+    show(resultScreen);
 
-  // --- Játék vége: mentés + UI frissítés (PARAMÉTERES) ---
-  async function endGame(playerName, finalScore, totalQuestions) {
-    // UI
-    quizScreen.style.display = "none";
-    resultScreen.style.display = "block";
-
-    // Helyi (eszköz) rekord frissítése – védetten
+    // High score (eszköz)
     try {
       const high = Number(localStorage.getItem(HS_KEY) || 0);
-      if (finalScore > high) localStorage.setItem(HS_KEY, String(finalScore));
-      if (typeof highView !== "undefined" && highView) {
-        highView.textContent = String(Math.max(finalScore, high));
+      if (state.score > high) localStorage.setItem(HS_KEY, String(state.score));
+      highView.textContent = String(Math.max(state.score, high));
+    } catch {}
+
+    // Mentés
+    try {
+      await firestoreAddResult(state.player, state.score, state.questions.length);
+    } catch (e) {
+      console.error("[EndGame] mentési hiba:", e);
+    }
+
+    resultText.innerHTML = `${escapeHtml(state.player)}, a pontszámod: <strong>${state.score} / ${state.questions.length}</strong>`;
+  }
+
+  // ---------- Admin ----------
+  async function showAdmin() {
+    show(adminScreen);
+    await renderLeaderboard();
+  }
+
+  // ---------- Bootstrap ----------
+  (async function bootstrap() {
+    const orig = startBtn.textContent;
+    startBtn.disabled = true;
+    startBtn.textContent = "Betöltés…";
+
+    try {
+      await loadQuestionsJson();
+      startBtn.disabled = false;
+      startBtn.textContent = orig;
+    } catch (e) {
+      console.error("[Bootstrap] Kérdésbetöltési hiba:", e);
+      startBtn.textContent = "Hiba (frissítsd az oldalt)";
+      alert("Nem sikerült betölteni a kérdéseket. Kérlek frissítsd az oldalt.");
+    }
+
+    // kezdő nézet + HUD init
+    show(nameScreen);
+    qTotalEl.textContent = String(TOTAL_QUESTIONS);
+    scoreView.textContent = "0";
+    highView.textContent = String(Number(localStorage.getItem(HS_KEY) || 0));
+  })();
+
+  // ---------- Események ----------
+  startBtn.addEventListener("click", async () => {
+    const name = (playerNameEl.value || "").trim();
+    if (!name) { alert("Kérlek add meg a neved!"); return; }
+
+    if (name.toLowerCase() === "kmadmin") {
+      await showAdmin(); return;
+    }
+
+    // limit: max 5 próbálkozás / név
+    try {
+      const attempts = await firestoreCountAttempts(name);
+      if (attempts >= 5) {
+        alert("Ezzel a névvel elérted az 5 próbálkozás limitet. Próbálj másik nevet, vagy ürítsd az eredménytáblát admin módban.");
+        return;
       }
     } catch (e) {
-      console.warn("[EndGame] High score frissítés kihagyva:", e);
+      console.warn("[Attempts] ellenőrzés kihagyva:", e);
     }
 
-    // Firestore mentés (COMPAT)
-    try {
-      console.log("[EndGame] mentés indul", { playerName, finalScore, totalQuestions });
-      await firestoreAddResult(playerName, finalScore, totalQuestions);
-      console.log("[EndGame] Mentve Firestore-ba");
-    } catch (e) {
-      console.error("[EndGame] Mentési hiba:", e);
+    // játékállapot
+    state.player = name;
+    state.score = 0;
+    state.current = 0;
+
+    // kiválasztott kérdések (a válaszok sorrendje keverve, correct újraszámolva)
+    state.questions = pickRandomQuestions();
+    if (!state.questions.length) {
+      alert("Nincs elérhető kérdés. Kérlek frissítsd az oldalt.");
+      return;
     }
 
-    // Eredmény kiírás
-    if (typeof resultText !== "undefined" && resultText) {
-      resultText.innerHTML =
-        `${playerName}, a pontszámod: <strong>${finalScore} / ${totalQuestions}</strong>`;
-    }
-  }
+    qTotalEl.textContent = String(state.questions.length);
+    scoreView.textContent = "0";
+
+    show(quizScreen);
+    showQuestion();
+  });
+
+  clearBoardBtn?.addEventListener("click", async () => {
+    if (!confirm("Biztosan törlöd az összes eredményt?")) return;
+    await firestoreClearLeaderboard();
+    await renderLeaderboard();
+    alert("Eredménytábla törölve.");
+  });
+
+  backBtn?.addEventListener("click", () => {
+    show(nameScreen);
+  });
 });
-
-
-
-
-
