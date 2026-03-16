@@ -323,7 +323,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const attempts = await firestoreCountAttempts(name);
       if (attempts >= 3) {
-        alert("Ezzel a névvel elérted a 3 próbálkozás limitet. Várj az ereményhírdeésig.");
+        alert("Ezzel a névvel elérted a 3 próbálkozás limitet. Várj az ereményhírdetésig.");
         return;
       }
     } catch (e) {
