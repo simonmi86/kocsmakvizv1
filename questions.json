@@ -126,6 +126,18 @@
     "explain": "Egy helyszínen, minden italból csak egy számít."
   },
    {
+    "q": "Hány különböző utcában jártunk már?",
+    "a": ["80","24","216","42"],
+    "correct": 0,
+    "explain": "Ezt felsorolni is nehéz."
+  },
+  {
+    "q": "Hány különböző helyszínen jártunk már?",
+    "a": ["148","80","216","42"],
+    "correct": 0,
+    "explain": "Igen, tényleg ennyi."
+  },
+   {
     "q": "Hány pontot ér a vodka szóda hoszúlépés kombó, ha a bor dupláz?",
     "a": ["18","26","28","20"],
     "correct": 0,
