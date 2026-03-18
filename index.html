@@ -7,12 +7,12 @@
 
   <link rel="stylesheet" href="style.css" />
 
-  <!-- Firebase (COMPAT) – maradhat így; a kulcs NEM titok, de korlátozd domainre -->
+  <!-- Firebase (COMPAT) – a kulcs NEM titok, de érdemes domainre korlátozni -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
   <script>
-    // A SAJÁT FIREBASE CONFIGOD (Console → project settings)
+    // SAJÁT FIREBASE CONFIG (Console → Project settings)
     const firebaseConfig = {
       apiKey: "...",
       authDomain: "kocsmakvizv1.firebaseapp.com",
@@ -43,6 +43,9 @@
     <div id="adminScreen" style="display:none;">
       <h3>Eredménytábla</h3>
       <div class="adminActions">
+        <!-- ⬇️ ÚJ: Kvíz zárolása gomb (Firestore + localStorage fallback) -->
+        <button id="toggleLockBtn">Kvíz zárolása: ellenőrzés…</button>
+
         <button id="clearBoardBtn" class="danger">Eredménytábla törlése</button>
         <button id="backBtn">Vissza a kezdőképernyőre</button>
       </div>
@@ -74,7 +77,7 @@
 
       <h3 id="question"></h3>
 
-      <!-- ⬇️ ÚJ: indoklás doboz (helyes válasznál 3 mp) -->
+      <!-- Indoklás doboz (helyes válasznál 3 mp) -->
       <div id="explainBox" class="explain" style="display:none;"></div>
 
       <div id="answers"></div>
