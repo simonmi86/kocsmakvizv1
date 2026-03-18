@@ -1,4 +1,4 @@
-/* script.js – Kocsmakvíz (helyes válasznál 3 mp-es indoklás) */
+/* script.js – Kocsmakvíz (helyes válasznál 3 mp-es indoklás + admin LOCK Firestore + fallback) */
 
 document.addEventListener("DOMContentLoaded", () => {
   // ---------- Beállítások ----------
@@ -7,6 +7,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const HS_KEY = "kocsmakviz_highscore";
   const LS_BOARD_KEY = "kocsmakviz_leaderboard_v1";
   const HAS_DB = typeof window !== "undefined" && window.db && typeof window.db.collection === "function";
+
+  // ⬇️ LOCK fallback kulcs (Firestore az elsődleges, de maradjon localStorage is)
+  const LOCK_KEY = "kocsmakviz_locked_v1";
 
   // ---------- DOM ----------
   const nameScreen   = document.getElementById("nameScreen");
@@ -31,6 +34,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const answersEl    = document.getElementById("answers");
   const resultText   = document.getElementById("resultText");
   const leaderBody   = document.getElementById("leaderTableBody");
+
+  // ⬇️ ÚJ: Admin lock gomb
+  const toggleLockBtn = document.getElementById("toggleLockBtn");
 
   // ---------- Állapot ----------
   let state = {
@@ -192,6 +198,66 @@ document.addEventListener("DOMContentLoaded", () => {
     }).join("");
   }
 
+  // ---------- Kvíz zárolás / nyitás (Firestore + fallback) ----------
+  async function firestoreGetLock() {
+    if (!HAS_DB) return null;
+    try {
+      const ref = db.collection("config").doc("global");
+      const snap = await ref.get();
+      if (!snap.exists) return false;
+      const d = snap.data() || {};
+      return !!d.locked;
+    } catch (e) {
+      console.warn("[Lock] Nem sikerült lekérdezni Firestore-ból:", e);
+      return null; // fallback
+    }
+  }
+
+  async function firestoreSetLock(locked) {
+    if (!HAS_DB) return false;
+    try {
+      const ref = db.collection("config").doc("global");
+      await ref.set({ locked: !!locked }, { merge: true });
+      return true;
+    } catch (e) {
+      console.error("[Lock] Nem sikerült menteni Firestore-ba:", e);
+      return false;
+    }
+  }
+
+  function getLockLocal() {
+    try { return localStorage.getItem(LOCK_KEY) === "1"; }
+    catch { return false; }
+  }
+  function setLockLocal(locked) {
+    try { localStorage.setItem(LOCK_KEY, locked ? "1" : "0"); }
+    catch {}
+  }
+
+  async function getLockState() {
+    const fs = await firestoreGetLock();
+    if (typeof fs === "boolean") return fs;
+    return getLockLocal();
+  }
+
+  async function setLockState(locked) {
+    let ok = await firestoreSetLock(locked);
+    if (!ok) setLockLocal(locked);
+    return locked;
+  }
+
+  async function refreshLockButton() {
+    if (!toggleLockBtn) return;
+    const locked = await getLockState();
+    if (locked) {
+      toggleLockBtn.textContent = "Kvíz zárolása: ZÁROLVA";
+      toggleLockBtn.classList.add("locked");
+    } else {
+      toggleLockBtn.textContent = "Kvíz zárolása: NYITVA";
+      toggleLockBtn.classList.remove("locked");
+    }
+  }
+
   // ---------- Kvíz logika ----------
   function showQuestion() {
     if (!Array.isArray(state.questions) || state.current < 0 || state.current >= state.questions.length) {
@@ -212,44 +278,44 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // kattintáskezelés
     answersEl.querySelectorAll(".answerBtn").forEach(btn => {
-  btn.addEventListener("click", (e) => {
-    stopTimer();
-    const chosen = Number(e.currentTarget.dataset.id);
+      btn.addEventListener("click", (e) => {
+        stopTimer();
+        const chosen = Number(e.currentTarget.dataset.id);
 
-    // minden gomb letiltása
-    answersEl.querySelectorAll(".answerBtn").forEach(b => { b.disabled = true; });
+        // minden gomb letiltása
+        answersEl.querySelectorAll(".answerBtn").forEach(b => { b.disabled = true; });
 
-    const isCorrect = (chosen === q.correct);
+        const isCorrect = (chosen === q.correct);
 
-    // csak a kiválasztott gombot jelöljük
-    const chosenBtn = answersEl.querySelector(`.answerBtn[data-id="${chosen}"]`);
-    if (chosenBtn) {
-      chosenBtn.classList.add(isCorrect ? "correct" : "wrong");
-    }
+        // csak a kiválasztott gombot jelöljük
+        const chosenBtn = answersEl.querySelector(`.answerBtn[data-id="${chosen}"]`);
+        if (chosenBtn) {
+          chosenBtn.classList.add(isCorrect ? "correct" : "wrong");
+        }
 
-    if (isCorrect) {
-      state.score++;
-      scoreView.textContent = String(state.score);
+        if (isCorrect) {
+          state.score++;
+          scoreView.textContent = String(state.score);
 
-      // Ha van indoklás → megjelenítjük 3 mp-ig
-      if (q.explain && q.explain.trim()) {
-        explainBox.textContent = q.explain.trim();
-        explainBox.style.display = "block";
-        setTimeout(nextQuestion, 3000);
-        return;
-      }
-    }
+          // Ha van indoklás → megjelenítjük 3 mp-ig
+          if (q.explain && q.explain.trim()) {
+            explainBox.textContent = q.explain.trim();
+            explainBox.style.display = "block";
+            setTimeout(nextQuestion, 3000);
+            return;
+          }
+        }
 
-    // rossz válasz (vagy nincs indoklás): rövid várakozás, majd tovább
-    setTimeout(nextQuestion, 600);
-  }, { passive: true });
-});
+        // rossz válasz (vagy nincs indoklás): rövid várakozás, majd tovább
+        setTimeout(nextQuestion, 600);
+      }, { passive: true });
+    });
 
-    // timer indul
+    // timer indul (lejáratnál NEM jelöljük a helyest)
     startTimer(() => {
-  answersEl.querySelectorAll(".answerBtn").forEach(b => { b.disabled = true; });
-  setTimeout(nextQuestion, 600);
-});
+      answersEl.querySelectorAll(".answerBtn").forEach(b => { b.disabled = true; });
+      setTimeout(nextQuestion, 600);
+    });
 
   }
 
@@ -284,6 +350,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // ---------- Admin ----------
   async function showAdmin() {
     show(adminScreen);
+    await refreshLockButton();  // frissítjük a zárolás gomb feliratát
     await renderLeaderboard();
   }
 
@@ -316,10 +383,22 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!name) { alert("Kérlek add meg a neved!"); return; }
 
     if (name.toLowerCase() === "kmadmin") {
-      await showAdmin(); return;
+      await showAdmin(); 
+      return;
     }
 
-    // limit: max 5 próbálkozás / név
+    // ⬇️ Zároltság ellenőrzés (csak nem-admin nevekre)
+    try {
+      const locked = await getLockState();
+      if (locked) {
+        alert("A kvíz jelenleg nem elérhető!");
+        return;
+      }
+    } catch (e) {
+      console.warn("[Lock] ellenőrzés sikertelen, továbblépnénk:", e);
+    }
+
+    // limit: max 3 próbálkozás / név (a kérésed szerint)
     try {
       const attempts = await firestoreCountAttempts(name);
       if (attempts >= 3) {
@@ -347,6 +426,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
     show(quizScreen);
     showQuestion();
+  });
+
+  // Admin: kvíz zárolása / nyitása
+  toggleLockBtn?.addEventListener("click", async () => {
+    const current = await getLockState();
+    const next = !current;
+    await setLockState(next);
+    await refreshLockButton();
+    alert(next
+      ? "A kvíz mostantól ZÁROLVA (csak kmadmin léphet be)."
+      : "A kvíz mostantól NYITVA."
+    );
   });
 
   clearBoardBtn?.addEventListener("click", async () => {
